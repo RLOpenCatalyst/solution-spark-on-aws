@@ -163,6 +163,15 @@ Resources:
                 - servicecatalog:DescribeRecord
               Resource:
                 - '*'
+        - PolicyName: ec2-access
+          PolicyDocument:
+            Statement:
+              Effect: Allow
+              Action:
+                - ec2:DescribeInstances
+                - ec2:StartInstances
+                - ec2:StopInstances
+              Resource: '*'
         - PolicyName: sagemakerNotebook-access
           PolicyDocument:
             Statement:

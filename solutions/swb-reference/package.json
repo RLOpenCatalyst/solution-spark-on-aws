@@ -16,7 +16,7 @@
     "build": "heft build --clean && rushx pkg-json-lint",
     "build:test": "heft test --clean && rushx pkg-json-lint && rushx make-badges",
     "cdk": "cdk",
-    "cdk-deploy": "rush build && rushx compile && cdk deploy --all --require-approval never --outputs-file ./src/config/${STAGE}.js",
+    "cdk-deploy": "rushx compile && cdk deploy --all --require-approval never --outputs-file ./src/config/${STAGE}.js",
     "cdk-deploy:noBuild": "rushx compile && cdk deploy --all",
     "compile": "scripts/buildLambda.js",
     "depcheck": "depcheck",
@@ -25,7 +25,7 @@
     "lint:fix": "eslint . --fix",
     "make-badges": "istanbul-badges-readme --coverageDir=./temp/coverage --exitCode=1",
     "pkg-json-lint": "npmPkgJsonLint -c ../../.npmpackagejsonlintrc.json .",
-    "run-postDeployment": "rush build && node lib/src/postDeployment.js",
+    "run-postDeployment": "node lib/src/postDeployment.js",
     "sort-package-json": "sort-package-json package.json",
     "test": "rushx test:only && rushx make-badges",
     "test:only": "heft test --clean --no-build"
@@ -50,7 +50,8 @@
     "express": "^4.17.3",
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "node-rsa": "^1.1.1"
   },
   "devDependencies": {
     "@aws-sdk/client-cloudformation": "^3.118.1",
@@ -73,6 +74,7 @@
     "@types/lodash": "^4.14.181",
     "@types/node": "^14",
     "@types/uuid": "^8.3.4",
+    "@types/node-rsa": "^1.1.1",
     "aws-cdk": "^2.12.0",
     "aws-cdk-lib": "^2.29.1",
     "aws-lambda": "^1.0.7",

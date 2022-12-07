@@ -17,14 +17,16 @@ export async function handler(event: any) {
     // This is the source used by SSM automation docs to launch/terminate environments
     automation: 'Status',
 
-    sagemaker: 'NotebookInstanceStatus'
+    sagemaker: 'NotebookInstanceStatus',
+    ec2: 'state'
     // Add your new env types here
   };
 
   // Environment types could use different terminologies for their instance names (what we use for "INID#<instanceId>")
   // This is to standardize each of them
   const instanceIdLocation: { [id: string]: string } = {
-    sagemaker: 'NotebookInstanceName'
+    sagemaker: 'NotebookInstanceName',
+    ec2: 'instance-id'
 
     // Add your new env types here
   };
@@ -37,6 +39,11 @@ export async function handler(event: any) {
       instanceNameRecordKey: 'NotebookInstanceName',
       instanceArnRecordKey: 'NotebookArn',
       instanceRoleName: 'EnvironmentInstanceRoleArn'
+    },
+    ec2Rstudio: {
+      instanceNameRecordKey: 'RstudioInstanceId',
+      instanceArnRecordKey: 'RstudioInstanceArn',
+      instanceRoleName: 'RstudioInstanceRoleArn'
     }
 
     // Add your new env types here
@@ -48,6 +55,11 @@ export async function handler(event: any) {
       InService: 'COMPLETED',
       Deleting: 'TERMINATING',
       Deleted: 'TERMINATED'
+    },
+    ec2: {
+      running: 'COMPLETED',
+      'shutting-down': 'TERMINATING',
+      terminated: 'TERMINATED'
     }
     // Add your new env alternate statuses here
   };
