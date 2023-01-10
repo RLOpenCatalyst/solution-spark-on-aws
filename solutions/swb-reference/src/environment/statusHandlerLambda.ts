@@ -44,6 +44,11 @@ export async function handler(event: any) {
       instanceNameRecordKey: 'RstudioInstanceId',
       instanceArnRecordKey: 'RstudioInstanceArn',
       instanceRoleName: 'RstudioInstanceRoleArn'
+    },
+    ec2Spyder: {
+      instanceNameRecordKey: 'SpyderInstanceId',
+      instanceArnRecordKey: 'SpyderInstanceArn',
+      instanceRoleName: 'SpyderInstanceRoleArn'
     }
 
     // Add your new env types here

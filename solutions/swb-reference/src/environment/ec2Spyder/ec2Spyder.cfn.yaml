@@ -1,18 +1,31 @@
 AWSTemplateFormatVersion: 2010-09-09
 
-Description: Service-Workbench-on-AWS EC2-RStudio-RL Version
+Description: Service-Workbench-on-AWS EC2-Spyder-RL Version
 Metadata:
   PartnerName: Relevance Lab
   PartnerURL: https://relevancelab.com
-  KnowMore: https://github.com/RLOpenCatalyst/Service_Workbench_Templates/tree/main/RStudio
+
+Mappings: 
+  RegionMap: 
+    us-east-1: 
+      AmiID: "ami-0759d9ecf1fcb7be9"
+    us-east-2: 
+      AmiID: "ami-018bd425554ab6cf4"
+    us-west-1: 
+      AmiID: "ami-02258ab533d22fa75"
+    us-west-2: 
+      AmiID: "ami-02d3838a1d948d3ca"
+    ap-south-1: 
+      AmiID: "ami-0c33a5a105981b1fb"
+    ap-southeast-1: 
+      AmiID: "ami-061f216d271a880ce"
+    ap-southeast-2: 
+      AmiID: "ami-0d1748650516fb8a3"
 
 Parameters:
   Namespace:
     Type: String
     Description: An environment name that will be prefixed to resource names
-  AmiId:
-    Type: String
-    Description: Amazon Machine Image for the EC2 instance
   InstanceType:
     Type: String
     Description: EC2 instance type to launch
@@ -64,7 +77,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       Description: Permission boundary for EC2 instance role
-      ManagedPolicyName: !Join ['-', [Ref: Namespace, 'ec2-rstudio-permission-boundary']]
+      ManagedPolicyName: !Join ['-', [Ref: Namespace, 'ec2-spyder-permission-boundary']]
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -134,12 +147,11 @@ Resources:
             Action:
               - "ssm:*"
             Resource: "*"
-          
-  
+           
   IAMRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Join ["-", [Ref: Namespace, "ec2-rstudio-role"]]
+      RoleName: !Join ["-", [Ref: Namespace, "ec2-spyder-role"]]
       Path: "/"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -201,7 +213,7 @@ Resources:
   InstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
     Properties:
-      InstanceProfileName: !Join ["-", [Ref: Namespace, "ec2-rstudio-profile"]]
+      InstanceProfileName: !Join ["-", [Ref: Namespace, "ec2-spyder-profile"]]
       Path: "/"
       Roles:
         - Ref: IAMRole
@@ -209,7 +221,7 @@ Resources:
   SecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
-      GroupDescription: EC2 Rstudio workspace security group
+      GroupDescription: EC2 Spyder workspace security group
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 0
@@ -225,31 +237,125 @@ Resources:
           ToPort: 22
           CidrIp: !Ref AccessFromCIDRBlock
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: !Ref AccessFromCIDRBlock
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
+          FromPort: 8443
+          ToPort: 8443
           CidrIp: !Ref AccessFromCIDRBlock
       Tags:
         - Key: Name
-          Value: !Join ["-", [Ref: Namespace, "ec2-rstudio-sg"]]
+          Value: !Join ["-", [Ref: Namespace, "ec2-spyder-sg"]]
         - Key: Description
-          Value: EC2 Rstudio workspace security group
+          Value: EC2 Spyder workspace security group
       VpcId: !Ref VPC
 
   EC2Instance:
     Type: "AWS::EC2::Instance"
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT10M
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - config1
+            - config2
+        config1:
+          files:
+            "/home/ec2-user/.config/autostart/spyder.desktop":
+              mode: "000644"
+              owner: "ec2-user"
+              group: "ec2-user"
+              content: |
+                [Desktop Entry]
+                Type=Application
+                Exec="/home/ec2-user/start_spyder.sh"
+                Hidden=false
+                NoDisplay=false
+                X-GNOME-Autostart-enabled=true
+                Terminal=true
+                Name=Spyder
+                Comment=Spyder Desktop
+            "/home/ec2-user/start_spyder.sh":
+              mode: "000755"
+              owner: "ec2-user"
+              group: "ec2-user"
+              content: !Sub |
+                #!/bin/sh
+                set -x
+                xhost +local:all
+                sudo docker run --rm -ti --net=host -e DISPLAY=:1 relevancelab/spyder-ide:1.0.0
+            "/home/ec2-user/set_user_token.sh":
+              content: !Sub |
+                #!/bin/bash
+                sudo mkdir -p /var/run/dcvsimpleextauth
+                instance_id=$(curl -s "http://169.254.169.254/latest/meta-data/instance-id")
+                echo $instance_id | sudo dcvsimpleextauth add-user --user ec2-user --session swb-session
+                echo "User token set successfully"
+              mode: "000755"
+              owner: "ec2-user"
+              group: "ec2-user"
+            "/home/ec2-user/supervisor/supervisord.conf":
+              mode: "000644"
+              owner: "ec2-user"
+              group: "ec2-user"
+              content: |
+                [unix_http_server]
+                file=/home/ec2-user/supervisor/supervisor.sock   ; the path to the socket file
+                
+                [supervisord]
+                logfile=/home/ec2-user/supervisor/supervisord.log ; main log file; default $CWD/supervisord.log
+                logfile_maxbytes=50MB                  ; max main logfile bytes b4 rotation; default 50MB
+                logfile_backups=10                     ; # of main logfile backups; 0 means none, default 10
+                loglevel=info                          ; log level; default info; others: debug,warn,trace
+                pidfile=/home/ec2-user/supervisor/supervisord.pid ; supervisord pidfile; default supervisord.pid
+                nodaemon=false                         ; start in foreground if true; default false
+                minfds=1024                            ; min. avail startup file descriptors; default 1024
+                minprocs=200                           ; min. avail process descriptors;default 200
+                
+                [rpcinterface:supervisor]
+                supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+                [supervisorctl]
+                serverurl=unix:///home/ec2-user/supervisor/supervisor.sock ; use a unix:// URL  for a unix socket
+
+                [program:dcv-simple-ext-auth]
+                command=sudo dcvsimpleextauth start-server  ; the program (relative uses PATH, can take args)
+                directory=/home/ec2-user                                                                     ; directory to cwd to before exec (def no cwd)
+                user=ec2-user                                                                                ; setuid to this UNIX account to run the program
+                redirect_stderr=true                                                                         ; redirect proc stderr to stdout (default false)
+                stdout_logfile=/home/ec2-user/supervisor/dcv-simple-ext-auth.log
+            "/home/ec2-user/supervisor/supervisord.log":
+              content: "\n"
+              mode: "000664"
+              owner: "ec2-user"
+              group: "ec2-user"
+            "/home/ec2-user/disable_lock.sh":
+              content: !Sub |
+                #!/bin/bash
+                gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
+                echo "Lock disabled successfully"
+              mode: "000755"
+              owner: "ec2-user"
+              group: "ec2-user"
+        config2:
+          commands:
+            01_start_ext_auth:
+              cwd: "/home/ec2-user/supervisor"
+              command: "sudo /usr/local/bin/supervisord"
+            02_set_user_token:
+              cwd: "/home/ec2-user"
+              command: "sudo -u ec2-user /home/ec2-user/set_user_token.sh"
     Properties:
-      ImageId: !Ref AmiId
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyName
+      ImageId: !FindInMap
+        - RegionMap
+        - !Ref 'AWS::Region'
+        - AmiID
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 8
+            VolumeSize: 16
             Encrypted: true
             KmsKeyId: !Ref EncryptionKeyArn
       NetworkInterfaces:
@@ -260,32 +366,82 @@ Resources:
           SubnetId: !Ref Subnet
       Tags:
         - Key: Name
-          Value: !Join ["-", [Ref: Namespace, "ec2-rstudio"]]
+          Value: !Join ["-", [Ref: Namespace, "ec2-spyder"]]
         - Key: Description
-          Value: EC2 Rstudio workspace instance
-
+          Value: EC2 Spyder workspace instance
       UserData:
         Fn::Base64: !Sub |
           #!/usr/bin/env bash
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+          # trap '/opt/aws/bin/cfn-signal --exit-code 1 --resource EC2Instance --region ${AWS::Region} --stack ${AWS::StackName}' ERR
+          
+          # Install supervisor and start on boot
+          sudo pip3 install supervisor crudini
+
+          # Route auth request to external authenticator and restart dcv
+          sudo /usr/local/bin/crudini --set /etc/dcv/dcv.conf security auth-token-verifier \"http://127.0.0.1:8444\"
+          sudo systemctl restart dcvserver
+
+          # Set password for ec2-user
+          # instance_id=$(curl -s "http://169.254.169.254/latest/meta-data/instance-id")
+          # echo "ec2-user:$instance_id" | /usr/sbin/chpasswd
+
+          # Create dcv session start script
+          cat << EOF > /usr/local/bin/start-dcv-session
+          dcv create-session swb-session --name swb-session --user ec2-user --owner ec2-user
+          EOF
+          
+          # Create dcv session
+          sudo chown root: "/usr/local/bin/start-dcv-session"
+          sudo chmod 775 "/usr/local/bin/start-dcv-session"
+          sudo sh "/usr/local/bin/start-dcv-session"
+
+          # Install Docker
+          sudo yum install -y docker
+          sudo systemctl enable docker.service
+          sudo systemctl enable containerd.service
+          sudo systemctl start docker
+          sudo usermod -a -G docker ec2-user
+
+          # Pull docker image
+          sudo docker pull relevancelab/spyder-ide:1.0.0
+          
+          # Run init script to create files
+          /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
+          
+          # Add command to start on reboot
+          sudo crontab -l 2>/dev/null > "/tmp/crontab"
+          echo '@reboot cd /home/ec2-user/supervisor && sudo /usr/local/bin/supervisord 2>&1 >> /var/log/ext-auth-start.log' >> "/tmp/crontab"
+          echo '@reboot /usr/local/bin/start-dcv-session 2>&1 >> /var/log/start-dcv-session.log' >> "/tmp/crontab"
+          echo '@reboot /home/ec2-user/set_user_token.sh 2>&1 >> /var/log/set_user_token.log' >> "/tmp/crontab"
+          sudo crontab "/tmp/crontab"
+          
+          # Restart DCV session to start spyder
+          dcv close-session swb-session
+          sudo sh "/usr/local/bin/start-dcv-session"
+          
+          # Remove password and lock for ec2-user
+          sudo passwd -l ec2-user
+          sudo dcv create-session lock-session --name lock-session --user ec2-user --owner ec2-user --init /home/ec2-user/disable_lock.sh
+
           # Download and execute bootstrap script
           aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/get_bootstrap.sh" "/tmp"
           chmod 500 "/tmp/get_bootstrap.sh"
           /tmp/get_bootstrap.sh "${EnvironmentInstanceFiles}" '${S3Mounts}' "${AWS::Region}"
 
-          # Signal result to CloudFormation
-          /opt/aws/bin/cfn-signal -e $? --stack "${AWS::StackName}" --resource "EC2Instance" --region "${AWS::Region}"
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
 
 Outputs:
-  RstudioInstanceArn:
+  SpyderInstanceArn:
     Description: ARN of the EC2 workspace instance
     Value: !Sub
       - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${INSTANCE_ID}
       - INSTANCE_ID: !Ref EC2Instance
   
-  RstudioInstanceId:
+  SpyderInstanceId:
     Description: Instance Id for the EC2 workspace instance
     Value: !Ref EC2Instance
   
-  RstudioInstanceRoleArn:
+  SpyderInstanceRoleArn:
     Description: IAM role assumed by the EC2 workspace instance
     Value: !GetAtt IAMRole.Arn

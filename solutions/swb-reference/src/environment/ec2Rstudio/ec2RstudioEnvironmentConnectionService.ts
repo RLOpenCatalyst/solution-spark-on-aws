@@ -13,7 +13,7 @@ import {
 
 import NodeRSA = require("node-rsa")
 
-export default class SagemakerNotebookEnvironmentConnectionService implements EnvironmentConnectionService {
+export default class EC2RstudioEnvironmentConnectionService implements EnvironmentConnectionService {
   /**
    * Get credentials for connecting to the environment
    */

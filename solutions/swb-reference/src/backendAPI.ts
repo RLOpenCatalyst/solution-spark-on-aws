@@ -22,6 +22,8 @@ import { LoggingService } from '@aws/workbench-core-logging';
 import { Express } from 'express';
 import ec2RstudioEnvironmentConnectionService from './environment/ec2Rstudio/ec2RstudioEnvironmentConnectionService';
 import ec2RstudioEnvironmentLifecycleService from './environment/ec2Rstudio/ec2RstudioEnvironmentLifecycleService';
+import ec2SpyderEnvironmentConnectionService from './environment/ec2Spyder/ec2SpyderEnvironmentConnectionService';
+import ec2SpyderEnvironmentLifecycleService from './environment/ec2Spyder/ec2SpyderEnvironmentLifecycleService';
 import SagemakerNotebookEnvironmentConnectionService from './environment/sagemakerNotebook/sagemakerNotebookEnvironmentConnectionService';
 import SagemakerNotebookEnvironmentLifecycleService from './environment/sagemakerNotebook/sagemakerNotebookEnvironmentLifecycleService';
 
@@ -48,6 +50,10 @@ const apiRouteConfig: ApiRouteConfig = {
     ec2Rstudio: {
       lifecycle: new ec2RstudioEnvironmentLifecycleService(),
       connection: new ec2RstudioEnvironmentConnectionService()
+    },
+    ec2Spyder: {
+      lifecycle: new ec2SpyderEnvironmentLifecycleService(),
+      connection: new ec2SpyderEnvironmentConnectionService()
     }
 
     // Add your environment types here as follows:
