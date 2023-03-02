@@ -20,6 +20,9 @@ env_type() {
     if [ -d "/home/ec2-user/SageMaker" ]
     then
         printf "sagemaker"
+    elif [ -f "/etc/dcv/dcv.conf" ]
+    then
+        printf "ec2-dcv"
     else
         echo "Error! Unknown env type" > '/var/log/messages'
         exit 1
@@ -61,6 +64,12 @@ EOF
 # Install dependencies
 case "$(env_type)" in
     "sagemaker") # Update config and restart Jupyter
+        echo "Installing JQ"
+        sudo mv "${FILES_DIR}/offline-packages/jq-1.5-linux64" "/usr/local/bin/jq"
+        chmod +x "/usr/local/bin/jq"
+        echo "Finish installing jq"
+        ;;
+    "ec2-dcv") # Update config and restart Jupyter
         echo "Installing JQ"
         sudo mv "${FILES_DIR}/offline-packages/jq-1.5-linux64" "/usr/local/bin/jq"
         chmod +x "/usr/local/bin/jq"

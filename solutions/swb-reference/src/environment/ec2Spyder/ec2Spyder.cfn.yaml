@@ -274,6 +274,20 @@ Resources:
                 Terminal=true
                 Name=Spyder
                 Comment=Spyder Desktop
+            "/home/ec2-user/.config/autostart/studymount.desktop":
+              mode: "000644"
+              owner: "ec2-user"
+              group: "ec2-user"
+              content: |
+                [Desktop Entry]
+                Type=Application
+                Exec="/home/ec2-user/mount_study.sh"
+                Hidden=false
+                NoDisplay=false
+                X-GNOME-Autostart-enabled=true
+                Terminal=true
+                Name=Study-Mounting
+                Comment=Study Mounting
             "/home/ec2-user/start_spyder.sh":
               mode: "000755"
               owner: "ec2-user"
@@ -282,7 +296,19 @@ Resources:
                 #!/bin/sh
                 set -x
                 xhost +local:all
-                sudo docker run --rm -ti --net=host -e DISPLAY=:1 relevancelab/spyder-ide:1.0.0
+                # Adding sleep to wait for study mounting
+                sleep 150
+                docker run --rm -ti -v /home/ec2-user/studies:/home/ec2-user/studies --net=host -e DISPLAY=:1 relevancelab/spyder-ide:1.0.1
+            "/home/ec2-user/mount_study.sh":
+              mode: "000755"
+              owner: "ec2-user"
+              group: "ec2-user"
+              content: !Sub |
+                #!/bin/sh
+                set -x
+                # Adding sleep to avoid mounting failure
+                sleep 120
+                mount_s3.sh 2>&1 >> /home/ec2-user/mount_s3.log
             "/home/ec2-user/set_user_token.sh":
               content: !Sub |
                 #!/bin/bash
@@ -404,7 +430,7 @@ Resources:
           sudo usermod -a -G docker ec2-user
 
           # Pull docker image
-          sudo docker pull relevancelab/spyder-ide:1.0.0
+          sudo docker pull relevancelab/spyder-ide:1.0.1
           
           # Run init script to create files
           /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
@@ -417,8 +443,8 @@ Resources:
           sudo crontab "/tmp/crontab"
           
           # Restart DCV session to start spyder
-          dcv close-session swb-session
-          sudo sh "/usr/local/bin/start-dcv-session"
+          #dcv close-session swb-session
+          #sudo sh "/usr/local/bin/start-dcv-session"
           
           # Remove password and lock for ec2-user
           sudo passwd -l ec2-user
@@ -428,6 +454,10 @@ Resources:
           aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/get_bootstrap.sh" "/tmp"
           chmod 500 "/tmp/get_bootstrap.sh"
           /tmp/get_bootstrap.sh "${EnvironmentInstanceFiles}" '${S3Mounts}' "${AWS::Region}"
+
+          # Restart DCV session to start spyder
+          dcv close-session swb-session
+          sudo sh "/usr/local/bin/start-dcv-session"
 
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
 
