@@ -297,7 +297,6 @@ Resources:
                 set -x
                 xhost +local:all
                 # Adding sleep to wait for study mounting
-                sleep 150
                 docker run --rm -ti -v /home/ec2-user/studies:/home/ec2-user/studies --net=host -e DISPLAY=:1 relevancelab/spyder-ide:1.0.1
             "/home/ec2-user/mount_study.sh":
               mode: "000755"
@@ -307,7 +306,7 @@ Resources:
                 #!/bin/sh
                 set -x
                 # Adding sleep to avoid mounting failure
-                sleep 120
+                sleep 30
                 mount_s3.sh 2>&1 >> /home/ec2-user/mount_s3.log
             "/home/ec2-user/set_user_token.sh":
               content: !Sub |
@@ -370,6 +369,9 @@ Resources:
             02_set_user_token:
               cwd: "/home/ec2-user"
               command: "sudo -u ec2-user /home/ec2-user/set_user_token.sh"
+            03_create_application_desktop:
+              cwd: "/home/ec2-user"
+              command: "sudo -u ec2-user cp /home/ec2-user/.config/autostart/spyder.desktop /home/ec2-user/Desktop"
     Properties:
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref InstanceProfile
