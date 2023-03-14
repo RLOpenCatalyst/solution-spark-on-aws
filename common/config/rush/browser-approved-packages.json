@@ -379,6 +379,10 @@
       "allowedCategories": [ "production", "prototypes" ]
     },
     {
+      "name": "node-rsa",
+      "allowedCategories": [ "production" ]
+    },
+    {
       "name": "nodemon",
       "allowedCategories": [ "production" ]
     },

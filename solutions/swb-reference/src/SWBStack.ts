@@ -218,7 +218,9 @@ export class SWBStack extends Stack {
           resources: [
             'arn:aws:iam::*:role/analysis-*',
             'arn:aws:iam::*:role/SC-*-ServiceRole-*',
-            'arn:aws:iam::*:role/*-sagemaker-notebook-role'
+            'arn:aws:iam::*:role/*-sagemaker-notebook-role',
+            'arn:aws:iam::*:role/*-ec2-rstudio-role',
+            'arn:aws:iam::*:role/*-ec2-spyder-role'
           ]
         }),
         new PolicyStatement({
@@ -231,7 +233,9 @@ export class SWBStack extends Stack {
           ],
           resources: [
             'arn:aws:iam::*:instance-profile/analysis-*',
-            'arn:aws:iam::*:instance-profile/SC-*-InstanceProfile-*'
+            'arn:aws:iam::*:instance-profile/SC-*-InstanceProfile-*',
+            'arn:aws:iam::*:instance-profile/*-ec2-rstudio-profile',
+            'arn:aws:iam::*:instance-profile/*-ec2-spyder-profile'
           ]
         }),
         new PolicyStatement({
@@ -327,6 +331,30 @@ export class SWBStack extends Stack {
         })
       ]
     });
+    // Use the same document to update all EC2 based appplication policies
+    const ec2Policy = new PolicyDocument({
+      statements: [
+        new PolicyStatement({
+          actions: [
+            'kms:GenerateDataKeyWithoutPlaintext'
+          ],
+          resources: ['*']
+        }),
+        new PolicyStatement({
+          actions: [
+            'ec2:TerminateInstances'
+          ],
+          resources: ['arn:aws:ec2:*:*:instance/*']
+        }),
+        new PolicyStatement({
+          actions: [
+            'ec2:DescribeInstances',
+            'ec2:RunInstances'
+          ],
+          resources: ['*']
+        })
+      ]
+    });
 
     const iamRole = new Role(this, 'LaunchConstraint', {
       assumedBy: new ServicePrincipal('servicecatalog.amazonaws.com'),
@@ -334,6 +362,7 @@ export class SWBStack extends Stack {
       description: 'Launch constraint role for Service Catalog products',
       inlinePolicies: {
         sagemakerNotebookLaunchPermissions: sagemakerNotebookPolicy,
+        ec2LaunchPermissions: ec2Policy,
         commonScManagement
       }
     });
@@ -770,7 +799,7 @@ export class SWBStack extends Stack {
       const alias = new Alias(this, 'LiveAlias', {
         aliasName: 'live',
         version: apiLambda.currentVersion,
-        provisionedConcurrentExecutions: 1
+        // provisionedConcurrentExecutions: 1
       });
       API.root.addProxy({
         defaultIntegration: new LambdaIntegration(alias)

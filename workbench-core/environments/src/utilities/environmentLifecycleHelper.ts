@@ -72,6 +72,7 @@ export default class EnvironmentLifecycleHelper {
         ProductId: payload.envMetadata.ETC.productId
       });
       updatedPayload.ssmParameters.PathId = [listLaunchPathResponse.LaunchPathSummaries![0]!.Id!];
+      console.log('SSM Parameters - ' + JSON.stringify(updatedPayload.ssmParameters))
       await this.executeSSMDocument(updatedPayload);
     } catch (e) {
       console.log(e);

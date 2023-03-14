@@ -20,6 +20,9 @@ env_type() {
     if [ -d "/home/ec2-user/SageMaker" ]
     then
         printf "sagemaker"
+    elif [ -f "/etc/dcv/dcv.conf" ]
+    then
+        printf "ec2-dcv"
     else
         echo "Error! Unknown env type" > '/var/log/messages'
         exit 1
@@ -33,17 +36,14 @@ update_jupyter_config() {
     # HACK: Update the default SessionManager class used by Jupyter notebooks
     # so that it runs the S3 mount script the first time sessions are listed
     cat << EOF | cut -b5- >> "$config_file"
-
     import subprocess
     from notebook.services.sessions.sessionmanager import SessionManager as BaseSessionManager
-
     class SessionManager(BaseSessionManager):
         def list_sessions(self, *args, **kwargs):
             """Override default list_sessions() method"""
             self.mount_studies()
             result = super(SessionManager, self).list_sessions(*args, **kwargs)
             return result
-
         def mount_studies(self):
             """Execute mount_s3.sh if it hasn't already been run"""
             if not hasattr(self, 'studies_mounted'):
@@ -51,15 +51,12 @@ update_jupyter_config() {
                     "mount_s3.sh",
                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT
                 )
-
                 # Log results
                 if mounting_result.stdout:
                     for line in mounting_result.stdout.decode("utf-8").split("\n"):
                         if line: # Skip empty lines
                             self.log.info(line)
-
                 self.studies_mounted = True
-
     c.NotebookApp.session_manager_class = SessionManager
 EOF
 }
@@ -72,10 +69,16 @@ case "$(env_type)" in
         chmod +x "/usr/local/bin/jq"
         echo "Finish installing jq"
         ;;
+    "ec2-dcv") # Update config and restart Jupyter
+        echo "Installing JQ"
+        sudo mv "${FILES_DIR}/offline-packages/jq-1.5-linux64" "/usr/local/bin/jq"
+        chmod +x "/usr/local/bin/jq"
+        echo "Finish installing jq"
+        ;;
 esac
 
 echo "Copying Goofys from bootstrap.sh"
-cp "${FILES_DIR}/offline-packages/goofys-0.24.0" /usr/local/bin/goofys
+cp "${FILES_DIR}/offline-packages/goofys" /usr/local/bin/goofys
 chmod +x "/usr/local/bin/goofys"
 
 # Create S3 mount script and config file
@@ -85,15 +88,34 @@ ln -s "${FILES_DIR}/bin/mount_s3.sh" "/usr/local/bin/mount_s3.sh"
 printf "%s" "$S3_MOUNTS" > "/usr/local/etc/s3-mounts.json"
 echo "Finish mounting S3"
 
+OS_VERSION=`cat /etc/os-release | grep VERSION= | sed 's/VERSION="//' | sed 's/"//'`
+
 # Apply updates to environments based on environment type
 case "$(env_type)" in
     "sagemaker") # Update config and restart Jupyter
-        echo "Installing fuse"
-        cd "${FILES_DIR}/offline-packages/sagemaker/fuse-2.9.4"
-        sudo yum --disablerepo=* localinstall -y *.rpm
-        echo "Finish installing fuse"
+        if [ $OS_VERSION = '2' ]
+        then
+            echo "Installing fuse for AL2"
+            cd "${FILES_DIR}/offline-packages/sagemaker/fuse-2.9.4_AL2"
+            sudo yum --disablerepo=* localinstall -y *.rpm
+            echo "Finish installing fuse"
+            echo "Installing boto3 for AL2"
+            cd "${FILES_DIR}/offline-packages/sagemaker/boto3"
+            sudo yum --disablerepo=* localinstall -y python2-boto3-1.4.4-1.amzn2.noarch.rpm
+            echo "Finish installing boto3"
+        else
+            echo "Installing fuse for AL1"
+            cd "${FILES_DIR}/offline-packages/sagemaker/fuse-2.9.4"
+            sudo yum --disablerepo=* localinstall -y *.rpm
+            echo "Finish installing fuse"
+        fi
         update_jupyter_config "/home/ec2-user/.jupyter/jupyter_notebook_config.py"
-        initctl restart jupyter-server --no-wait
+        if [ $OS_VERSION = '2' ]
+        then
+            systemctl restart jupyter-server
+        else
+            initctl restart jupyter-server --no-wait
+        fi
         ;;
 esac
 

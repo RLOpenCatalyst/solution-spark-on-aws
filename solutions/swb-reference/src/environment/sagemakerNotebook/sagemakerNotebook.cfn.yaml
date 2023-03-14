@@ -253,6 +253,7 @@ Resources:
         - !Ref SecurityGroup
       DirectInternetAccess: Enabled
       LifecycleConfigName: !GetAtt BasicNotebookInstanceLifecycleConfig.NotebookInstanceLifecycleConfigName
+      PlatformIdentifier: notebook-al2-v1
       KmsKeyId: !Ref EncryptionKeyArn
 
   # Add script for mounting studies and autostop
