@@ -177,16 +177,7 @@ Resources:
             Statement:
               Effect: Allow
               Action:
-                - elasticloadbalancing:CreateTargetGroup
-                - elasticloadbalancing:RegisterTargets
-                - elasticloadbalancing:DeleteTargetGroup
-                - elasticloadbalancing:DeregisterTargets
-                - elasticloadbalancing:DescribeTargetHealth
-                - elasticloadbalancing:DescribeTargetGroups
-                - elasticloadbalancing:AddTags
-                - elasticloadbalancing:CreateRule
                 - elasticloadbalancing:DescribeRules
-                - elasticloadbalancing:DeleteRule
               Resource: '*'
         - PolicyName: sagemakerNotebook-access
           PolicyDocument:
@@ -271,6 +262,7 @@ Resources:
               - ssm:*
               - config:*
               - servicecatalog:*
+              - elasticloadbalancing:*
             Resource: '*'
           - Effect: Allow
             Action:

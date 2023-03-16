@@ -70,7 +70,7 @@ parameters:
   ListenerArn:
     type: String
     description: ARN of the alb listener in which the rules will be created
-    allowedPattern: ^arn:aws:elasticloadbalancing:::[a-zA-Z0-9_\-\/]+$
+    allowedPattern: ^arn:aws:elasticloadbalancing:(us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\d:\d{12}:listener\/[a-zA-Z0-9_\-\/]+$
   ListenerRulePriority:
     type: String
     description: Priority of the rule to be created
@@ -78,7 +78,7 @@ parameters:
   ApplicationUrl:
     type: String
     description: URL of the application. This will be used as the host header to forward to target group
-    allowedPattern: ^[a-zA-Z0-9_\-]{1,100}$
+    allowedPattern: ^[a-zA-Z0-9_\-.]{1,100}$
   DatasetsBucketArn:
     type: String
     description: The ARN of the Datasets bucket in the main account

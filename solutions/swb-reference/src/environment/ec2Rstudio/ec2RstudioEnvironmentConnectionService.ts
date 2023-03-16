@@ -42,8 +42,8 @@ export default class EC2RstudioEnvironmentConnectionService implements Environme
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   public async getRStudioUrl(instanceId: string, context?: any): Promise<string> {
     const region = process.env.AWS_REGION!;
-    const jwtSecret = process.env.JWT_SECRET!;
-    console.log(`JWT Secret - ${jwtSecret}`);
+    // const jwtSecret = process.env.JWT_SECRET!;
+    // console.log(`JWT Secret - ${jwtSecret}`);
     const awsService = new AwsService({ region });
     const hostingAccountAwsService = await awsService.getAwsServiceForRole({
       roleArn: context.roleArn,
@@ -55,24 +55,25 @@ export default class EC2RstudioEnvironmentConnectionService implements Environme
       InstanceIds: [instanceId]
     });
     const instanceDns = response.Reservations![0].Instances![0].PublicDnsName!;
-    const rstudioSignInUrl = `https://${instanceDns}/auth-do-sign-in`;
-    const hash = crypto.createHash('sha256');
-    const username = 'rstudio-user';
-    const password = hash.update(`${instanceId}${jwtSecret}`).digest('hex');
-    const credentials = `${username}\n${password}`;
-    const publicKey = await this.getRstudioPublicKey(instanceId, context);
-    const [exponent, modulus] = publicKey.split(':', 2);
-    const exponentBuffer = Buffer.from(exponent, 'hex');
-    const modulusBuffer = Buffer.from(modulus, 'hex');
-    const key = new NodeRSA();
-    const publicKeyObject = key.importKey({ n: modulusBuffer, e: exponentBuffer }, 'components-public');
-    const payloadBuffer = Buffer.from(credentials);
-    const result = crypto.publicEncrypt(
-      { key: publicKeyObject.exportKey('public'), padding: crypto.constants.RSA_PKCS1_PADDING },
-      payloadBuffer,
-    );
-    const params = { v: result.toString('base64') };
-    const authorizedUrl = `${rstudioSignInUrl}?${new URLSearchParams(params)}`;
+    const authorizedUrl = `http://${instanceDns}:8787`
+    // const rstudioSignInUrl = `https://${instanceDns}/auth-do-sign-in`;
+    // const hash = crypto.createHash('sha256');
+    // const username = 'rstudio-user';
+    // const password = hash.update(`${instanceId}${jwtSecret}`).digest('hex');
+    // const credentials = `${username}\n${password}`;
+    // const publicKey = await this.getRstudioPublicKey(instanceId, context);
+    // const [exponent, modulus] = publicKey.split(':', 2);
+    // const exponentBuffer = Buffer.from(exponent, 'hex');
+    // const modulusBuffer = Buffer.from(modulus, 'hex');
+    // const key = new NodeRSA();
+    // const publicKeyObject = key.importKey({ n: modulusBuffer, e: exponentBuffer }, 'components-public');
+    // const payloadBuffer = Buffer.from(credentials);
+    // const result = crypto.publicEncrypt(
+    //   { key: publicKeyObject.exportKey('public'), padding: crypto.constants.RSA_PKCS1_PADDING },
+    //   payloadBuffer,
+    // );
+    // const params = { v: result.toString('base64') };
+    // const authorizedUrl = `${rstudioSignInUrl}?${new URLSearchParams(params)}`;
     return authorizedUrl;
   }
 

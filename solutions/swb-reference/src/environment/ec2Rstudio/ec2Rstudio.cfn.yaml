@@ -11,8 +11,9 @@ Parameters:
     Type: String
     Description: An environment name that will be prefixed to resource names
   AmiId:
-    Type: String
+    Type:  'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Description: Amazon Machine Image for the EC2 instance
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
   InstanceType:
     Type: String
     Description: EC2 instance type to launch
@@ -223,14 +224,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: !Ref AccessFromCIDRBlock
+          CidrIp: !Ref AccessFromCIDRBlock      
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: !Ref AccessFromCIDRBlock
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
+          FromPort: 8787
+          ToPort: 8787
           CidrIp: !Ref AccessFromCIDRBlock
       Tags:
         - Key: Name
@@ -241,10 +238,55 @@ Resources:
 
   EC2Instance:
     Type: "AWS::EC2::Instance"
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT10M
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - config1
+            - config2
+        config1:
+          files:
+            "/home/ec2-user/mount_study.sh":
+              mode: "000755"
+              owner: "ec2-user"
+              group: "ec2-user"
+              content: !Sub |
+                #!/bin/sh
+                set -x
+                # Adding sleep to avoid mounting failure
+                sleep 60
+                mount_s3.sh 2>&1 >> /home/ec2-user/mount_s3.log            
+            "/home/ec2-user/start_rstudio.sh":
+             mode: "000755"
+             owner: "ec2-user"
+             group: "ec2-user"
+             content: !Sub |
+                #!/bin/sh
+                set -x
+                # Adding sleep to wait for container
+                sleep 30
+                instance_id=$(curl -s "http://169.254.169.254/latest/meta-data/instance-id")
+                sudo docker run -d --restart always -e PASSWORD=$instance_id -v /home/ec2-user:/home/rstudio-user -p 8787:8787  relevancelab/rstudio:4.1.0
+            "/var/log/rstudio.log":
+              content: "\n"
+              mode: "000664"
+              owner: "ec2-user"
+              group: "ec2-user"  
+        config2:
+          commands:
+            01_start_rstudio:
+              cwd: "/home/ec2-user"
+              command: "/home/ec2-user/start_rstudio.sh"    
+            02_mount_study:
+              cwd: "/home/ec2-user"
+              command: "/home/ec2-user/mount_study.sh"                     
     Properties:
-      ImageId: !Ref AmiId
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref InstanceProfile
+      ImageId: !Ref 'AmiId'
       KeyName: !Ref KeyName
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
@@ -267,7 +309,18 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/usr/bin/env bash
-          # Download and execute bootstrap script
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+
+          sudo yum install -y docker
+          sudo systemctl enable docker.service
+          sudo systemctl enable containerd.service
+          sudo systemctl start docker
+          sudo usermod -a -G docker ec2-user          
+          docker pull relevancelab/rstudio:4.1.0 
+
+          /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
+          /home/ec2-user/start_rstudio.sh         
+          
           aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/get_bootstrap.sh" "/tmp"
           chmod 500 "/tmp/get_bootstrap.sh"
           /tmp/get_bootstrap.sh "${EnvironmentInstanceFiles}" '${S3Mounts}' "${AWS::Region}"
