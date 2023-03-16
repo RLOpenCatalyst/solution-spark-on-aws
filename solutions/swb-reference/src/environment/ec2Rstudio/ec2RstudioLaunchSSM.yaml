@@ -37,8 +37,8 @@ parameters:
     allowedPattern: ^[a-zA-Z0-9_\-]{1,100}$
   AmiId:
     type: String
-    description: '(Required) Amazon Machine Image for the Rstudio instance'
-    allowedPattern: ^ami-[a-zA-Z0-9]+$
+    description: 'Amazon Machine Image for the Rstudio instance'
+    allowedPattern: ^[a-zA-Z0-9_\/-]{1,100}$
   KeyName:
     type: String
     description: '(Required) Keypair name for SSH access'

@@ -5,22 +5,22 @@ Metadata:
   PartnerName: Relevance Lab
   PartnerURL: https://relevancelab.com
 
-Mappings: 
-  RegionMap: 
-    us-east-1: 
-      AmiID: "ami-0759d9ecf1fcb7be9"
-    us-east-2: 
-      AmiID: "ami-018bd425554ab6cf4"
-    us-west-1: 
-      AmiID: "ami-02258ab533d22fa75"
-    us-west-2: 
-      AmiID: "ami-02d3838a1d948d3ca"
-    ap-south-1: 
-      AmiID: "ami-0c33a5a105981b1fb"
-    ap-southeast-1: 
-      AmiID: "ami-061f216d271a880ce"
-    ap-southeast-2: 
-      AmiID: "ami-0d1748650516fb8a3"
+Mappings:
+  RegionMap:
+    us-east-1:
+      AmiID: 'ami-0759d9ecf1fcb7be9'
+    us-east-2:
+      AmiID: 'ami-018bd425554ab6cf4'
+    us-west-1:
+      AmiID: 'ami-02258ab533d22fa75'
+    us-west-2:
+      AmiID: 'ami-02d3838a1d948d3ca'
+    ap-south-1:
+      AmiID: 'ami-0c33a5a105981b1fb'
+    ap-southeast-1:
+      AmiID: 'ami-061f216d271a880ce'
+    ap-southeast-2:
+      AmiID: 'ami-0d1748650516fb8a3'
 
 Parameters:
   Namespace:
@@ -48,6 +48,18 @@ Parameters:
   Subnet:
     Description: The VPC subnet in which the EC2 instance will reside
     Type: AWS::EC2::Subnet::Id
+  ALBSecurityGroup:
+    Description: Security Group Id of the ALB to which the EC2 instance traffic will be allowed from
+    Type: AWS::EC2::SecurityGroup::Id
+  ListenerArn:
+    Description: ARN of the alb listener in which the rules will be created
+    Type: String
+  ListenerRulePriority:
+    Description: Priority of the rule to be created
+    Type: Number
+  ApplicationUrl:
+    Description: URL of the application. This will be used as the host header to forward to target group
+    Type: String
   EnvironmentInstanceFiles:
     Type: String
     Description: >-
@@ -70,7 +82,7 @@ Parameters:
     Description: The ARN of main account bucket encryption key
 
 Conditions:
-  IamPolicyEmpty: !Equals [!Ref IamPolicyDocument, "{}"]
+  IamPolicyEmpty: !Equals [!Ref IamPolicyDocument, '{}']
 
 Resources:
   InstanceRolePermissionBoundary:
@@ -145,32 +157,32 @@ Resources:
             Resource: 'arn:aws:iam::*:role/swb-*'
           - Effect: Allow
             Action:
-              - "ssm:*"
-            Resource: "*"
-           
+              - 'ssm:*'
+            Resource: '*'
+
   IAMRole:
-    Type: "AWS::IAM::Role"
+    Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Join ["-", [Ref: Namespace, "ec2-spyder-role"]]
-      Path: "/"
+      RoleName: !Join ['-', [Ref: Namespace, 'ec2-spyder-role']]
+      Path: '/'
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
-          - Effect: "Allow"
+          - Effect: 'Allow'
             Principal:
               Service:
-                - "ec2.amazonaws.com"
+                - 'ec2.amazonaws.com'
             Action:
-              - "sts:AssumeRole"
+              - 'sts:AssumeRole'
       Policies:
         - !If
           - IamPolicyEmpty
-          - !Ref "AWS::NoValue"
-          - PolicyName: !Join ["-", [Ref: Namespace, "s3-studydata-policy"]]
+          - !Ref 'AWS::NoValue'
+          - PolicyName: !Join ['-', [Ref: Namespace, 's3-studydata-policy']]
             PolicyDocument: !Ref IamPolicyDocument
-        - PolicyName: !Join ["-", [Ref: Namespace, "s3-bootstrap-script-policy"]]
+        - PolicyName: !Join ['-', [Ref: Namespace, 's3-bootstrap-script-policy']]
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: 'Allow'
                 Action: 's3:GetObject'
@@ -178,11 +190,11 @@ Resources:
                   - 'arn:aws:s3:::${S3Location}/*'
                   # Remove "s3://" prefix from EnvironmentInstanceFiles
                   - S3Location: !Select [1, !Split ['s3://', !Ref EnvironmentInstanceFiles]]
-              - Effect: "Allow"
-                Action: "s3:ListBucket"
+              - Effect: 'Allow'
+                Action: 's3:ListBucket'
                 Resource: !Sub
-                  - "arn:${AWS::Partition}:s3:::${S3Bucket}"
-                  - S3Bucket: !Select [2, !Split ["/", !Ref EnvironmentInstanceFiles]]
+                  - 'arn:${AWS::Partition}:s3:::${S3Bucket}'
+                  - S3Bucket: !Select [2, !Split ['/', !Ref EnvironmentInstanceFiles]]
                 Condition:
                   StringLike:
                     s3:prefix: !Sub
@@ -201,25 +213,25 @@ Resources:
                   - !Ref MainAccountKeyArn
         - PolicyName: param-store-access
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
-              - Effect: "Allow"
+              - Effect: 'Allow'
                 Action:
-                  - "ssm:GetParameter"
-                  - "ssm:PutParameter"
-                Resource: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+                  - 'ssm:GetParameter'
+                  - 'ssm:PutParameter'
+                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
       PermissionsBoundary: !Ref InstanceRolePermissionBoundary
 
   InstanceProfile:
-    Type: "AWS::IAM::InstanceProfile"
+    Type: 'AWS::IAM::InstanceProfile'
     Properties:
-      InstanceProfileName: !Join ["-", [Ref: Namespace, "ec2-spyder-profile"]]
-      Path: "/"
+      InstanceProfileName: !Join ['-', [Ref: Namespace, 'ec2-spyder-profile']]
+      Path: '/'
       Roles:
         - Ref: IAMRole
 
   SecurityGroup:
-    Type: "AWS::EC2::SecurityGroup"
+    Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: EC2 Spyder workspace security group
       SecurityGroupEgress:
@@ -239,16 +251,16 @@ Resources:
         - IpProtocol: tcp
           FromPort: 8443
           ToPort: 8443
-          CidrIp: !Ref AccessFromCIDRBlock
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
       Tags:
         - Key: Name
-          Value: !Join ["-", [Ref: Namespace, "ec2-spyder-sg"]]
+          Value: !Join ['-', [Ref: Namespace, 'ec2-spyder-sg']]
         - Key: Description
           Value: EC2 Spyder workspace security group
       VpcId: !Ref VPC
 
   EC2Instance:
-    Type: "AWS::EC2::Instance"
+    Type: 'AWS::EC2::Instance'
     CreationPolicy:
       ResourceSignal:
         Timeout: PT10M
@@ -260,10 +272,10 @@ Resources:
             - config2
         config1:
           files:
-            "/home/ec2-user/.config/autostart/spyder.desktop":
-              mode: "000644"
-              owner: "ec2-user"
-              group: "ec2-user"
+            '/home/ec2-user/.config/autostart/spyder.desktop':
+              mode: '000644'
+              owner: 'ec2-user'
+              group: 'ec2-user'
               content: |
                 [Desktop Entry]
                 Type=Application
@@ -274,10 +286,10 @@ Resources:
                 Terminal=true
                 Name=Spyder
                 Comment=Spyder Desktop
-            "/home/ec2-user/.config/autostart/studymount.desktop":
-              mode: "000644"
-              owner: "ec2-user"
-              group: "ec2-user"
+            '/home/ec2-user/.config/autostart/studymount.desktop':
+              mode: '000644'
+              owner: 'ec2-user'
+              group: 'ec2-user'
               content: |
                 [Desktop Entry]
                 Type=Application
@@ -288,44 +300,44 @@ Resources:
                 Terminal=true
                 Name=Study-Mounting
                 Comment=Study Mounting
-            "/home/ec2-user/start_spyder.sh":
-              mode: "000755"
-              owner: "ec2-user"
-              group: "ec2-user"
+            '/home/ec2-user/start_spyder.sh':
+              mode: '000755'
+              owner: 'ec2-user'
+              group: 'ec2-user'
               content: !Sub |
                 #!/bin/sh
                 set -x
                 xhost +local:all
                 # Adding sleep to wait for study mounting
                 docker run --rm -ti -v /home/ec2-user/studies:/home/ec2-user/studies --net=host -e DISPLAY=:1 relevancelab/spyder-ide:1.0.1
-            "/home/ec2-user/mount_study.sh":
-              mode: "000755"
-              owner: "ec2-user"
-              group: "ec2-user"
+            '/home/ec2-user/mount_study.sh':
+              mode: '000755'
+              owner: 'ec2-user'
+              group: 'ec2-user'
               content: !Sub |
                 #!/bin/sh
                 set -x
                 # Adding sleep to avoid mounting failure
                 sleep 30
                 mount_s3.sh 2>&1 >> /home/ec2-user/mount_s3.log
-            "/home/ec2-user/set_user_token.sh":
+            '/home/ec2-user/set_user_token.sh':
               content: !Sub |
                 #!/bin/bash
                 sudo mkdir -p /var/run/dcvsimpleextauth
                 instance_id=$(curl -s "http://169.254.169.254/latest/meta-data/instance-id")
                 echo $instance_id | sudo dcvsimpleextauth add-user --user ec2-user --session swb-session
                 echo "User token set successfully"
-              mode: "000755"
-              owner: "ec2-user"
-              group: "ec2-user"
-            "/home/ec2-user/supervisor/supervisord.conf":
-              mode: "000644"
-              owner: "ec2-user"
-              group: "ec2-user"
+              mode: '000755'
+              owner: 'ec2-user'
+              group: 'ec2-user'
+            '/home/ec2-user/supervisor/supervisord.conf':
+              mode: '000644'
+              owner: 'ec2-user'
+              group: 'ec2-user'
               content: |
                 [unix_http_server]
                 file=/home/ec2-user/supervisor/supervisor.sock   ; the path to the socket file
-                
+
                 [supervisord]
                 logfile=/home/ec2-user/supervisor/supervisord.log ; main log file; default $CWD/supervisord.log
                 logfile_maxbytes=50MB                  ; max main logfile bytes b4 rotation; default 50MB
@@ -335,7 +347,7 @@ Resources:
                 nodaemon=false                         ; start in foreground if true; default false
                 minfds=1024                            ; min. avail startup file descriptors; default 1024
                 minprocs=200                           ; min. avail process descriptors;default 200
-                
+
                 [rpcinterface:supervisor]
                 supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
 
@@ -348,30 +360,30 @@ Resources:
                 user=ec2-user                                                                                ; setuid to this UNIX account to run the program
                 redirect_stderr=true                                                                         ; redirect proc stderr to stdout (default false)
                 stdout_logfile=/home/ec2-user/supervisor/dcv-simple-ext-auth.log
-            "/home/ec2-user/supervisor/supervisord.log":
+            '/home/ec2-user/supervisor/supervisord.log':
               content: "\n"
-              mode: "000664"
-              owner: "ec2-user"
-              group: "ec2-user"
-            "/home/ec2-user/disable_lock.sh":
+              mode: '000664'
+              owner: 'ec2-user'
+              group: 'ec2-user'
+            '/home/ec2-user/disable_lock.sh':
               content: !Sub |
                 #!/bin/bash
                 gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
                 echo "Lock disabled successfully"
-              mode: "000755"
-              owner: "ec2-user"
-              group: "ec2-user"
+              mode: '000755'
+              owner: 'ec2-user'
+              group: 'ec2-user'
         config2:
           commands:
             01_start_ext_auth:
-              cwd: "/home/ec2-user/supervisor"
-              command: "sudo /usr/local/bin/supervisord"
+              cwd: '/home/ec2-user/supervisor'
+              command: 'sudo /usr/local/bin/supervisord'
             02_set_user_token:
-              cwd: "/home/ec2-user"
-              command: "sudo -u ec2-user /home/ec2-user/set_user_token.sh"
+              cwd: '/home/ec2-user'
+              command: 'sudo -u ec2-user /home/ec2-user/set_user_token.sh'
             03_create_application_desktop:
-              cwd: "/home/ec2-user"
-              command: "sudo -u ec2-user cp /home/ec2-user/.config/autostart/spyder.desktop /home/ec2-user/Desktop"
+              cwd: '/home/ec2-user'
+              command: 'sudo -u ec2-user cp /home/ec2-user/.config/autostart/spyder.desktop /home/ec2-user/Desktop'
     Properties:
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref InstanceProfile
@@ -387,14 +399,14 @@ Resources:
             Encrypted: true
             KmsKeyId: !Ref EncryptionKeyArn
       NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
+        - AssociatePublicIpAddress: 'true'
+          DeviceIndex: '0'
           GroupSet:
             - !Ref SecurityGroup
           SubnetId: !Ref Subnet
       Tags:
         - Key: Name
-          Value: !Join ["-", [Ref: Namespace, "ec2-spyder"]]
+          Value: !Join ['-', [Ref: Namespace, 'ec2-spyder']]
         - Key: Description
           Value: EC2 Spyder workspace instance
       UserData:
@@ -402,7 +414,7 @@ Resources:
           #!/usr/bin/env bash
           exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
           # trap '/opt/aws/bin/cfn-signal --exit-code 1 --resource EC2Instance --region ${AWS::Region} --stack ${AWS::StackName}' ERR
-          
+
           # Install supervisor and start on boot
           sudo pip3 install supervisor crudini
 
@@ -418,7 +430,7 @@ Resources:
           cat << EOF > /usr/local/bin/start-dcv-session
           dcv create-session swb-session --name swb-session --user ec2-user --owner ec2-user
           EOF
-          
+
           # Create dcv session
           sudo chown root: "/usr/local/bin/start-dcv-session"
           sudo chmod 775 "/usr/local/bin/start-dcv-session"
@@ -433,21 +445,21 @@ Resources:
 
           # Pull docker image
           sudo docker pull relevancelab/spyder-ide:1.0.1
-          
+
           # Run init script to create files
           /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
-          
+
           # Add command to start on reboot
           sudo crontab -l 2>/dev/null > "/tmp/crontab"
           echo '@reboot cd /home/ec2-user/supervisor && sudo /usr/local/bin/supervisord 2>&1 >> /var/log/ext-auth-start.log' >> "/tmp/crontab"
           echo '@reboot /usr/local/bin/start-dcv-session 2>&1 >> /var/log/start-dcv-session.log' >> "/tmp/crontab"
           echo '@reboot /home/ec2-user/set_user_token.sh 2>&1 >> /var/log/set_user_token.log' >> "/tmp/crontab"
           sudo crontab "/tmp/crontab"
-          
+
           # Restart DCV session to start spyder
           #dcv close-session swb-session
           #sudo sh "/usr/local/bin/start-dcv-session"
-          
+
           # Remove password and lock for ec2-user
           sudo passwd -l ec2-user
           sudo dcv create-session lock-session --name lock-session --user ec2-user --owner ec2-user --init /home/ec2-user/disable_lock.sh
@@ -463,17 +475,49 @@ Resources:
 
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
 
+  EC2TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 15
+      HealthyThresholdCount: 5
+      Matcher:
+        HttpCode: '200,301,302'
+      Name: !Join ['-', [Ref: Namespace, 'tg']]
+      Port: 443
+      Protocol: HTTPS
+      Targets:
+        - Id:
+            Ref: EC2Instance
+          Port: 8443
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref 'VPC'
+
+  ListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref EC2TargetGroup
+      Conditions:
+        - Field: host-header
+          Values:
+            - !Ref ApplicationUrl
+      ListenerArn: !Ref ListenerArn
+      Priority: !Ref ListenerRulePriority
+
 Outputs:
   SpyderInstanceArn:
     Description: ARN of the EC2 workspace instance
     Value: !Sub
       - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${INSTANCE_ID}
       - INSTANCE_ID: !Ref EC2Instance
-  
+
   SpyderInstanceId:
     Description: Instance Id for the EC2 workspace instance
     Value: !Ref EC2Instance
-  
+
   SpyderInstanceRoleArn:
     Description: IAM role assumed by the EC2 workspace instance
     Value: !GetAtt IAMRole.Arn

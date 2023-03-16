@@ -3,6 +3,8 @@
  *  SPDX-License-Identifier: Apache-2.0
  */
 
+import { ElasticLoadBalancingV2 } from '@aws-sdk/client-elastic-load-balancing-v2';
+import { Route53 } from '@aws-sdk/client-route-53';
 import { AwsService } from '@aws/workbench-core-base';
 import {
   EnvironmentLifecycleService,
@@ -28,6 +30,9 @@ export default class Ec2SpyderEnvironmentLifecycleService implements Environment
     const cidr = _.find(envMetadata.ETC.params, { key: 'CIDR' })!.value!;
     const instanceSize = _.find(envMetadata.ETC.params, { key: 'InstanceType' })!.value!;
     const keyName = _.find(envMetadata.ETC.params, { key: 'KeyName' })!.value!;
+    const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
+
+    const { albSecurityGroupId, listenerArn, partnerDomain } = secureConnectionMetadata;
 
     const { datasetsBucketArn, mainAccountRegion, mainAccountId, mainAcctEncryptionArn } =
       await this.helper.getCfnOutputs();
@@ -36,6 +41,10 @@ export default class Ec2SpyderEnvironmentLifecycleService implements Environment
       envMetadata,
       mainAcctEncryptionArn
     );
+
+    const listenerRulePriority = await this.calculateRulePriority(envMetadata.id!);
+    const applicationUrl = `${this._envType}-${envMetadata.id!}.${partnerDomain}`;
+    await this.createRoute53Record(applicationUrl, secureConnectionMetadata);
 
     const ssmParameters = {
       InstanceName: [`ec2spyderinstance-${Date.now()}`],
@@ -53,6 +62,10 @@ export default class Ec2SpyderEnvironmentLifecycleService implements Environment
       IamPolicyDocument: [iamPolicyDocument],
       S3Mounts: [s3Mounts],
       KeyName: [keyName],
+      ALBSecurityGroup: [albSecurityGroupId],
+      ListenerArn: [listenerArn],
+      ListenerRulePriority: [listenerRulePriority],
+      ApplicationUrl: [applicationUrl],
       MainAccountKeyArn: [mainAcctEncryptionArn],
       MainAccountRegion: [mainAccountRegion],
       MainAccountId: [mainAccountId]
@@ -72,6 +85,11 @@ export default class Ec2SpyderEnvironmentLifecycleService implements Environment
     // Get value from env in DDB
     const envDetails = await this.envService.getEnvironment(envId, true);
     const provisionedProductId = envDetails.provisionedProductId!; // This is updated by status handler
+
+    const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
+    const { partnerDomain } = secureConnectionMetadata;
+    const applicationUrl = `${this._envType}-${envId}.${partnerDomain}`;
+    await this.deleteRoute53Record(applicationUrl, secureConnectionMetadata);
 
     const ssmParameters = {
       ProvisionedProductId: [provisionedProductId],
@@ -139,5 +157,99 @@ export default class Ec2SpyderEnvironmentLifecycleService implements Environment
     await this.envService.updateEnvironment(envId, { status: 'STOPPING' });
 
     return { envId, status: 'STOPPING' };
+  }
+
+  public async calculateRulePriority(envId: string): Promise<string> {
+    // Get value from env in DDB
+    const envDetails = await this.envService.getEnvironment(envId, true);
+    const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
+    if (!secureConnectionMetadata) {
+      throw new Error('Secure connection metadata not found. Please contact the administrator');
+    }
+    // Assume hosting account EnvMgmt role
+    const elbv2 = await this.getElbSDKForRole({
+      roleArn: envDetails.PROJ.envMgmtRoleArn,
+      roleSessionName: `RulePriority-${this._envType}-${Date.now()}`,
+      externalId: envDetails.PROJ.externalId,
+      region: process.env.AWS_REGION!,
+    });
+
+    const params = {
+      ListenerArn: secureConnectionMetadata.listenerArn,
+    };
+
+    const response = await elbv2.describeRules(params);
+    const rules = response.Rules!;
+    // Returns list of priorities, returns 0 for default rule
+    const priorities = _.map(rules, rule => {
+      return rule.IsDefault ? 0 : _.toInteger(rule.Priority);
+    });
+    return (_.max(priorities)! + 1).toString();;
+  }
+
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  public async createRoute53Record(applicationUrl: string, secureConnectionMetadata?: any): Promise<void> {
+    const { hostedZoneId, albDnsName } = secureConnectionMetadata;
+    await this.changeResourceRecordSets('CREATE', hostedZoneId, applicationUrl, 'CNAME', albDnsName);
+    console.log('Created Route53 record')
+  }
+
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  public async deleteRoute53Record(applicationUrl: string, secureConnectionMetadata?: any): Promise<void> {
+    const { hostedZoneId, albDnsName } = secureConnectionMetadata;
+    await this.changeResourceRecordSets('DELETE', hostedZoneId, applicationUrl, 'CNAME', albDnsName);
+    console.log('Deleted Route53 record')
+  }
+
+  public async changeResourceRecordSets(
+    action: string, hostedZoneId: string, subdomain: string, recordType: string, recordValue: string
+  ): Promise<void> {
+    const route53Client = await this.getRoute53SDKForBase();
+    const params = {
+      HostedZoneId: hostedZoneId,
+      ChangeBatch: {
+        Changes: [
+          {
+            Action: action,
+            ResourceRecordSet: {
+              Name: subdomain,
+              Type: recordType,
+              TTL: 300,
+              ResourceRecords: [{ Value: recordValue }],
+            },
+          },
+        ],
+      },
+    };
+    await route53Client.changeResourceRecordSets(params);
+  }
+
+  public async getElbSDKForRole(params: {
+    roleArn: string;
+    roleSessionName: string;
+    externalId?: string;
+    region: string;
+  }): Promise<ElasticLoadBalancingV2> {
+    const { Credentials } = await this.aws.clients.sts.assumeRole({
+      RoleArn: params.roleArn,
+      RoleSessionName: params.roleSessionName,
+      ExternalId: params.externalId
+    });
+    if (Credentials) {
+      return new ElasticLoadBalancingV2({
+        region: params.region,
+        credentials: {
+          accessKeyId: Credentials.AccessKeyId!,
+          secretAccessKey: Credentials.SecretAccessKey!,
+          sessionToken: Credentials.SessionToken!
+        }
+      });
+    } else {
+      throw new Error(`Unable to assume role with params: ${params}`);
+    }
+  }
+
+  public async getRoute53SDKForBase(): Promise<Route53> {
+    return new Route53({ region: process.env.AWS_REGION! });
   }
 }

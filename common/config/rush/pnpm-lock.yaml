@@ -175,6 +175,8 @@ importers:
     specifiers:
       '@aws-sdk/client-cloudformation': ^3.118.1
       '@aws-sdk/client-dynamodb': ^3.118.1
+      '@aws-sdk/client-elastic-load-balancing-v2': 3.130.0
+      '@aws-sdk/client-route-53': 3.130.0
       '@aws-sdk/client-s3': ^3.118.1
       '@aws-sdk/client-sagemaker': ^3.118.1
       '@aws-sdk/client-service-catalog': ^3.118.1
@@ -231,6 +233,8 @@ importers:
     dependencies:
       '@aws-sdk/client-cloudformation': 3.130.0
       '@aws-sdk/client-dynamodb': 3.130.0
+      '@aws-sdk/client-elastic-load-balancing-v2': 3.130.0
+      '@aws-sdk/client-route-53': 3.130.0
       '@aws-sdk/client-s3': 3.130.0
       '@aws-sdk/client-service-catalog': 3.130.0
       '@aws-sdk/client-ssm': 3.130.0
@@ -1885,6 +1889,51 @@ packages:
       - aws-crt
     dev: false
 
+  /@aws-sdk/client-elastic-load-balancing-v2/3.130.0:
+    resolution: {integrity: sha512-2g3/UsrP2vgEn0X49QwqsX3L8fK5d8vcJwxH8QQVulI/T6B94R3qh5fqfH4/uRai4alaSIjXAv+dgcdkhOZ5XQ==}
+    engines: {node: '>=12.0.0'}
+    dependencies:
+      '@aws-crypto/sha256-browser': 2.0.0
+      '@aws-crypto/sha256-js': 2.0.0
+      '@aws-sdk/client-sts': 3.130.0
+      '@aws-sdk/config-resolver': 3.130.0
+      '@aws-sdk/credential-provider-node': 3.130.0
+      '@aws-sdk/fetch-http-handler': 3.127.0
+      '@aws-sdk/hash-node': 3.127.0
+      '@aws-sdk/invalid-dependency': 3.127.0
+      '@aws-sdk/middleware-content-length': 3.127.0
+      '@aws-sdk/middleware-host-header': 3.127.0
+      '@aws-sdk/middleware-logger': 3.127.0
+      '@aws-sdk/middleware-recursion-detection': 3.127.0
+      '@aws-sdk/middleware-retry': 3.127.0
+      '@aws-sdk/middleware-serde': 3.127.0
+      '@aws-sdk/middleware-signing': 3.130.0
+      '@aws-sdk/middleware-stack': 3.127.0
+      '@aws-sdk/middleware-user-agent': 3.127.0
+      '@aws-sdk/node-config-provider': 3.127.0
+      '@aws-sdk/node-http-handler': 3.127.0
+      '@aws-sdk/protocol-http': 3.127.0
+      '@aws-sdk/smithy-client': 3.127.0
+      '@aws-sdk/types': 3.127.0
+      '@aws-sdk/url-parser': 3.127.0
+      '@aws-sdk/util-base64-browser': 3.109.0
+      '@aws-sdk/util-base64-node': 3.55.0
+      '@aws-sdk/util-body-length-browser': 3.55.0
+      '@aws-sdk/util-body-length-node': 3.55.0
+      '@aws-sdk/util-defaults-mode-browser': 3.127.0
+      '@aws-sdk/util-defaults-mode-node': 3.130.0
+      '@aws-sdk/util-user-agent-browser': 3.127.0
+      '@aws-sdk/util-user-agent-node': 3.127.0
+      '@aws-sdk/util-utf8-browser': 3.109.0
+      '@aws-sdk/util-utf8-node': 3.109.0
+      '@aws-sdk/util-waiter': 3.127.0
+      entities: 2.2.0
+      fast-xml-parser: 3.19.0
+      tslib: 2.4.0
+    transitivePeerDependencies:
+      - aws-crt
+    dev: false
+
   /@aws-sdk/client-eventbridge/3.130.0:
     resolution: {integrity: sha512-Qg6J4VnRC8J9K7q+h3/fJ2a8+2UZYQKOJbu3Qy7e45X3W8rkgZej1asducNkY+p4ZyhO3E3KC9hH3UW05Oj/eA==}
     engines: {node: '>=12.0.0'}
@@ -2056,6 +2105,53 @@ packages:
       '@aws-sdk/util-utf8-node': 3.55.0
       '@aws-sdk/util-waiter': 3.78.0
       tslib: 2.4.0
+    dev: false
+
+  /@aws-sdk/client-route-53/3.130.0:
+    resolution: {integrity: sha512-f+O++D+6FYrr1RotwgP1XaB1ALGpPUJQRKC1fG7LtvvuVlvaUuO8FVIlPQ9oUjcL7WLP1d+ObkVP+1OwfTU0dw==}
+    engines: {node: '>=12.0.0'}
+    dependencies:
+      '@aws-crypto/sha256-browser': 2.0.0
+      '@aws-crypto/sha256-js': 2.0.0
+      '@aws-sdk/client-sts': 3.130.0
+      '@aws-sdk/config-resolver': 3.130.0
+      '@aws-sdk/credential-provider-node': 3.130.0
+      '@aws-sdk/fetch-http-handler': 3.127.0
+      '@aws-sdk/hash-node': 3.127.0
+      '@aws-sdk/invalid-dependency': 3.127.0
+      '@aws-sdk/middleware-content-length': 3.127.0
+      '@aws-sdk/middleware-host-header': 3.127.0
+      '@aws-sdk/middleware-logger': 3.127.0
+      '@aws-sdk/middleware-recursion-detection': 3.127.0
+      '@aws-sdk/middleware-retry': 3.127.0
+      '@aws-sdk/middleware-sdk-route53': 3.127.0
+      '@aws-sdk/middleware-serde': 3.127.0
+      '@aws-sdk/middleware-signing': 3.130.0
+      '@aws-sdk/middleware-stack': 3.127.0
+      '@aws-sdk/middleware-user-agent': 3.127.0
+      '@aws-sdk/node-config-provider': 3.127.0
+      '@aws-sdk/node-http-handler': 3.127.0
+      '@aws-sdk/protocol-http': 3.127.0
+      '@aws-sdk/smithy-client': 3.127.0
+      '@aws-sdk/types': 3.127.0
+      '@aws-sdk/url-parser': 3.127.0
+      '@aws-sdk/util-base64-browser': 3.109.0
+      '@aws-sdk/util-base64-node': 3.55.0
+      '@aws-sdk/util-body-length-browser': 3.55.0
+      '@aws-sdk/util-body-length-node': 3.55.0
+      '@aws-sdk/util-defaults-mode-browser': 3.127.0
+      '@aws-sdk/util-defaults-mode-node': 3.130.0
+      '@aws-sdk/util-user-agent-browser': 3.127.0
+      '@aws-sdk/util-user-agent-node': 3.127.0
+      '@aws-sdk/util-utf8-browser': 3.109.0
+      '@aws-sdk/util-utf8-node': 3.109.0
+      '@aws-sdk/util-waiter': 3.127.0
+      '@aws-sdk/xml-builder': 3.109.0
+      entities: 2.2.0
+      fast-xml-parser: 3.19.0
+      tslib: 2.4.0
+    transitivePeerDependencies:
+      - aws-crt
     dev: false
 
   /@aws-sdk/client-s3-control/3.130.0:
@@ -2928,6 +3024,14 @@ packages:
     engines: {node: '>= 12.0.0'}
     dependencies:
       '@aws-sdk/protocol-http': 3.127.0
+      '@aws-sdk/types': 3.127.0
+      tslib: 2.4.0
+    dev: false
+
+  /@aws-sdk/middleware-sdk-route53/3.127.0:
+    resolution: {integrity: sha512-UavVG1KT6L30vhFmooakYU175YArmvp5r3wVIrqIDajNCOM5NOTnfEGTsmXb0fjTM370u/4cwjBK1+fFHhb4nA==}
+    engines: {node: '>= 12.0.0'}
+    dependencies:
       '@aws-sdk/types': 3.127.0
       tslib: 2.4.0
     dev: false

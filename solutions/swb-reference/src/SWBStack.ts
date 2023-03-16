@@ -56,6 +56,7 @@ export class SWBStack extends Stack {
     USER_POOL_ID: string;
     WEBSITE_URL: string;
     MAIN_ACCT_ENCRYPTION_KEY_ARN_OUTPUT_KEY: string;
+    SECURE_CONNECTION_METADATA: string;
   };
 
   private _accessLogsBucket: Bucket;
@@ -85,7 +86,8 @@ export class SWBStack extends Stack {
       USER_POOL_ID,
       CLIENT_ID,
       CLIENT_SECRET,
-      MAIN_ACCT_ENCRYPTION_KEY_ARN_OUTPUT_KEY
+      MAIN_ACCT_ENCRYPTION_KEY_ARN_OUTPUT_KEY,
+      SECURE_CONNECTION_METADATA
     } = getConstants();
 
     super(app, STACK_NAME, {
@@ -135,7 +137,8 @@ export class SWBStack extends Stack {
       CLIENT_SECRET: clientSecret,
       USER_POOL_ID: userPoolId,
       WEBSITE_URL,
-      MAIN_ACCT_ENCRYPTION_KEY_ARN_OUTPUT_KEY
+      MAIN_ACCT_ENCRYPTION_KEY_ARN_OUTPUT_KEY,
+      SECURE_CONNECTION_METADATA
     };
 
     this._createInitialOutputs(AWS_REGION, AWS_REGION_SHORT_NAME, UI_CLIENT_URL);
@@ -342,6 +345,12 @@ export class SWBStack extends Stack {
         }),
         new PolicyStatement({
           actions: [
+            'ssm:GetParameters'
+          ],
+          resources: ['*']
+        }),
+        new PolicyStatement({
+          actions: [
             'ec2:TerminateInstances'
           ],
           resources: ['arn:aws:ec2:*:*:instance/*']
@@ -349,7 +358,28 @@ export class SWBStack extends Stack {
         new PolicyStatement({
           actions: [
             'ec2:DescribeInstances',
-            'ec2:RunInstances'
+            'ec2:RunInstances',
+            'ec2:DescribeImages'
+          ],
+          resources: ['*']
+        })
+      ]
+    });
+    // Policy to create ALB resources
+    const elbPolicy = new PolicyDocument({
+      statements: [
+        new PolicyStatement({
+          actions: [
+            'elasticloadbalancing:CreateTargetGroup',
+            'elasticloadbalancing:RegisterTargets',
+            'elasticloadbalancing:DeleteTargetGroup',
+            'elasticloadbalancing:DeregisterTargets',
+            'elasticloadbalancing:DescribeTargetHealth',
+            'elasticloadbalancing:DescribeTargetGroups',
+            'elasticloadbalancing:AddTags',
+            'elasticloadbalancing:CreateRule',
+            'elasticloadbalancing:DescribeRules',
+            'elasticloadbalancing:DeleteRule'
           ],
           resources: ['*']
         })
@@ -363,6 +393,7 @@ export class SWBStack extends Stack {
       inlinePolicies: {
         sagemakerNotebookLaunchPermissions: sagemakerNotebookPolicy,
         ec2LaunchPermissions: ec2Policy,
+        elbPermissions: elbPolicy,
         commonScManagement
       }
     });
@@ -692,6 +723,11 @@ export class SWBStack extends Stack {
           new PolicyStatement({
             actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
             resources: ['*']
+          }),
+          new PolicyStatement({
+            actions: ['route53:ChangeResourceRecordSets'],
+            resources: ['*'],
+            sid: 'Route53Access'
           }),
           new PolicyStatement({
             sid: 'datasetS3Access',

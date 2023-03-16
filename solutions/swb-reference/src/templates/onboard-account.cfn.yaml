@@ -172,6 +172,13 @@ Resources:
                 - ec2:StartInstances
                 - ec2:StopInstances
               Resource: '*'
+        - PolicyName: elb-access
+          PolicyDocument:
+            Statement:
+              Effect: Allow
+              Action:
+                - elasticloadbalancing:DescribeRules
+              Resource: '*'
         - PolicyName: sagemakerNotebook-access
           PolicyDocument:
             Statement:
@@ -255,6 +262,7 @@ Resources:
               - ssm:*
               - config:*
               - servicecatalog:*
+              - elasticloadbalancing:*
             Resource: '*'
           - Effect: Allow
             Action:
