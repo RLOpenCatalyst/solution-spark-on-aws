@@ -36,6 +36,18 @@ Parameters:
   Subnet:
     Description: The VPC subnet in which the EC2 instance will reside
     Type: AWS::EC2::Subnet::Id
+  ALBSecurityGroup:
+    Description: Security Group Id of the ALB to which the EC2 instance traffic will be allowed from
+    Type: AWS::EC2::SecurityGroup::Id
+  ListenerArn:
+    Description: ARN of the alb listener in which the rules will be created
+    Type: String
+  ListenerRulePriority:
+    Description: Priority of the rule to be created
+    Type: Number
+  ApplicationUrl:
+    Description: URL of the application. This will be used as the host header to forward to target group
+    Type: String
   EnvironmentInstanceFiles:
     Type: String
     Description: >-
@@ -228,7 +240,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 8787
           ToPort: 8787
-          CidrIp: !Ref AccessFromCIDRBlock
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
       Tags:
         - Key: Name
           Value: !Join ["-", [Ref: Namespace, "ec2-rstudio-sg"]]
@@ -327,6 +339,39 @@ Resources:
 
           # Signal result to CloudFormation
           /opt/aws/bin/cfn-signal -e $? --stack "${AWS::StackName}" --resource "EC2Instance" --region "${AWS::Region}"
+
+  EC2TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 15
+      HealthyThresholdCount: 5
+      Matcher:
+        HttpCode: '200,301,302'
+      Name: !Join ['-', [Ref: Namespace, 'tg']]
+      Port: 8787
+      Protocol: HTTP
+      Targets:
+        - Id:
+            Ref: EC2Instance
+          Port: 8787
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref 'VPC'
+
+  ListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref EC2TargetGroup
+      Conditions:
+        - Field: host-header
+          Values:
+            - !Ref ApplicationUrl
+      ListenerArn: !Ref ListenerArn
+      Priority: !Ref ListenerRulePriority
+
 
 Outputs:
   RstudioInstanceArn:
