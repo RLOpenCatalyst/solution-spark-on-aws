@@ -13,7 +13,10 @@ import {
 
 import NodeRSA = require("node-rsa")
 
+import { getEnvIdFromInstanceId } from '../envUtils';
+
 export default class EC2RstudioEnvironmentConnectionService implements EnvironmentConnectionService {
+  private _envType: string = 'ec2Rstudio';
   /**
    * Get credentials for connecting to the environment
    */
@@ -41,21 +44,25 @@ export default class EC2RstudioEnvironmentConnectionService implements Environme
    */
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   public async getRStudioUrl(instanceId: string, context?: any): Promise<string> {
-    const region = process.env.AWS_REGION!;
+    // const region = process.env.AWS_REGION!;
     // const jwtSecret = process.env.JWT_SECRET!;
     // console.log(`JWT Secret - ${jwtSecret}`);
-    const awsService = new AwsService({ region });
-    const hostingAccountAwsService = await awsService.getAwsServiceForRole({
-      roleArn: context.roleArn,
-      roleSessionName: `RstudioConnect-${Date.now()}`,
-      externalId: context.externalId,
-      region
-    });
-    const response = await hostingAccountAwsService.clients.ec2.describeInstances({
-      InstanceIds: [instanceId]
-    });
-    const instanceDns = response.Reservations![0].Instances![0].PublicDnsName!;
-    const authorizedUrl = `http://${instanceDns}:8787`
+    const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
+    const { partnerDomain } = secureConnectionMetadata;
+    const envId = await getEnvIdFromInstanceId(instanceId);
+
+    // const awsService = new AwsService({ region });
+    // const hostingAccountAwsService = await awsService.getAwsServiceForRole({
+    //   roleArn: context.roleArn,
+    //   roleSessionName: `RstudioConnect-${Date.now()}`,
+    //   externalId: context.externalId,
+    //   region
+    // });
+    // const response = await hostingAccountAwsService.clients.ec2.describeInstances({
+    //   InstanceIds: [instanceId]
+    // });
+    // const instanceDns = response.Reservations![0].Instances![0].PublicDnsName!;
+    const authorizedUrl = `https://${this._envType}-${envId}.${partnerDomain}`
     // const rstudioSignInUrl = `https://${instanceDns}/auth-do-sign-in`;
     // const hash = crypto.createHash('sha256');
     // const username = 'rstudio-user';

@@ -4,11 +4,11 @@
  */
 
 
-import { AwsService } from '@aws/workbench-core-base';
 import {
   EnvironmentConnectionService,
   EnvironmentConnectionLinkPlaceholder
 } from '@aws/workbench-core-environments';
+import { getEnvIdFromInstanceId } from '../envUtils';
 
 
 export default class EC2SpyderEnvironmentConnectionService implements EnvironmentConnectionService {
@@ -42,16 +42,8 @@ export default class EC2SpyderEnvironmentConnectionService implements Environmen
   public async getSpyderUrl(instanceId: string, context?: any): Promise<string> {
     const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
     const { partnerDomain } = secureConnectionMetadata;
-    const aws = new AwsService({ region: process.env.AWS_REGION!, ddbTableName: process.env.STACK_NAME! });
-    const ddbService = aws.helpers.ddb;
-    const scanner = ddbService.scan({
-      filter: 'instanceId = :val',
-      values: { ":val": `${instanceId}` }
-    });
-    console.log(`Params - ${JSON.stringify(scanner.getParams())}`)
-    const dataFromScan = await scanner.execute();
-    console.log(`Scan results - ${JSON.stringify(dataFromScan)}`)
-    const authorizedUrl = `https://${this._envType}-${dataFromScan!.Items![0].id!}.${partnerDomain}/?authToken=${instanceId}#swb-session`;
+    const envId = await getEnvIdFromInstanceId(instanceId);
+    const authorizedUrl = `https://${this._envType}-${envId}.${partnerDomain}/?authToken=${instanceId}#swb-session`;
     console.log(`URL - ${authorizedUrl}`);
     // const region = process.env.AWS_REGION!;
     // const awsService = new AwsService({ region });

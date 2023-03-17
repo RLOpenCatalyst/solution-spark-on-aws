@@ -12,6 +12,12 @@ import {
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
+import {
+  calculateRulePriority,
+  createRoute53Record,
+  deleteRoute53Record
+} from '../envUtils';
+
 export default class Ec2RstudioEnvironmentLifecycleService implements EnvironmentLifecycleService {
   public helper: EnvironmentLifecycleHelper;
   public aws: AwsService;
@@ -29,6 +35,9 @@ export default class Ec2RstudioEnvironmentLifecycleService implements Environmen
     const instanceSize = _.find(envMetadata.ETC.params, { key: 'InstanceType' })!.value!;
     const amiId = _.find(envMetadata.ETC.params, { key: 'AmiId' })!.value!;
     const keyName = _.find(envMetadata.ETC.params, { key: 'KeyName' })!.value!;
+    const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
+
+    const { albSecurityGroupId, listenerArn, partnerDomain } = secureConnectionMetadata;
 
     const { datasetsBucketArn, mainAccountRegion, mainAccountId, mainAcctEncryptionArn } =
       await this.helper.getCfnOutputs();
@@ -37,6 +46,10 @@ export default class Ec2RstudioEnvironmentLifecycleService implements Environmen
       envMetadata,
       mainAcctEncryptionArn
     );
+
+    const listenerRulePriority = await calculateRulePriority(envMetadata.id!, this._envType);
+    const applicationUrl = `${this._envType}-${envMetadata.id!}.${partnerDomain}`;
+    await createRoute53Record(applicationUrl, secureConnectionMetadata);
 
     const ssmParameters = {
       InstanceName: [`ec2rstudioinstance-${Date.now()}`],
@@ -55,6 +68,10 @@ export default class Ec2RstudioEnvironmentLifecycleService implements Environmen
       S3Mounts: [s3Mounts],
       AmiId: [amiId],
       KeyName: [keyName],
+      ALBSecurityGroup: [albSecurityGroupId],
+      ListenerArn: [listenerArn],
+      ListenerRulePriority: [listenerRulePriority],
+      ApplicationUrl: [applicationUrl],
       MainAccountKeyArn: [mainAcctEncryptionArn],
       MainAccountRegion: [mainAccountRegion],
       MainAccountId: [mainAccountId]
@@ -75,6 +92,10 @@ export default class Ec2RstudioEnvironmentLifecycleService implements Environmen
     const envDetails = await this.envService.getEnvironment(envId, true);
     const provisionedProductId = envDetails.provisionedProductId!; // This is updated by status handler
 
+    const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
+    const { partnerDomain } = secureConnectionMetadata;
+    const applicationUrl = `${this._envType}-${envId}.${partnerDomain}`;
+    await deleteRoute53Record(applicationUrl, secureConnectionMetadata);
     const ssmParameters = {
       ProvisionedProductId: [provisionedProductId],
       TerminateToken: [uuidv4()],
