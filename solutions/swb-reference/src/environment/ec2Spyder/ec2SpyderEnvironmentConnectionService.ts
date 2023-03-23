@@ -3,13 +3,11 @@
  *  SPDX-License-Identifier: Apache-2.0
  */
 
-
 import {
   EnvironmentConnectionService,
   EnvironmentConnectionLinkPlaceholder
 } from '@aws/workbench-core-environments';
 import { getEnvIdFromInstanceId } from '../envUtils';
-
 
 export default class EC2SpyderEnvironmentConnectionService implements EnvironmentConnectionService {
   private _envType: string = 'ec2Spyder';
@@ -18,7 +16,7 @@ export default class EC2SpyderEnvironmentConnectionService implements Environmen
    */
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   public async getAuthCreds(instanceName: string, context?: any): Promise<any> {
-    const authorizedUrl = await this.getSpyderUrl(instanceName, context)
+    const authorizedUrl = await this.getSpyderUrl(instanceName, context);
     return { url: authorizedUrl };
   }
 
@@ -60,5 +58,4 @@ export default class EC2SpyderEnvironmentConnectionService implements Environmen
     // const authorizedUrl = `https://${instanceDns}:8443/?authToken=${instanceId}#swb-session`;
     return authorizedUrl;
   }
-
 }

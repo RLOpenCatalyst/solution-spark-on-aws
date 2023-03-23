@@ -11,3 +11,16 @@
 #userPoolId: ''
 #clientId: ''
 #clientSecret: ''
+
+# JWT secret token for the SWB instance
+#jwtSecret: ''
+
+# ALB details to enable secure connection
+#secureConnectionMetadata:
+#  {
+#    'albSecurityGroupId': '',
+#    'listenerArn': '',
+#    'partnerDomain': '',
+#    'hostedZoneId': '',
+#    'albDnsName': '
+#  }

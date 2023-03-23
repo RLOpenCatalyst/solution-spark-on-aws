@@ -12,11 +12,7 @@ import {
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
-import {
-  calculateRulePriority,
-  createRoute53Record,
-  deleteRoute53Record
-} from '../envUtils';
+import { calculateRulePriority, createRoute53Record, deleteRoute53Record } from '../envUtils';
 
 export default class Ec2RstudioEnvironmentLifecycleService implements EnvironmentLifecycleService {
   public helper: EnvironmentLifecycleHelper;

@@ -14,11 +14,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { calculateRulePriority, createRoute53Record, deleteRoute53Record } from '../envUtils';
 
-export default class Ec2SpyderEnvironmentLifecycleService implements EnvironmentLifecycleService {
+export default class EC2Rstudio421EnvironmentLifecycleService implements EnvironmentLifecycleService {
   public helper: EnvironmentLifecycleHelper;
   public aws: AwsService;
   public envService: EnvironmentService;
-  private _envType: string = 'ec2Spyder';
+  private _envType: string = 'ec2Rstudio421';
 
   public constructor() {
     this.helper = new EnvironmentLifecycleHelper();
@@ -29,6 +29,7 @@ export default class Ec2SpyderEnvironmentLifecycleService implements Environment
   public async launch(envMetadata: any): Promise<{ [id: string]: string }> {
     const cidr = _.find(envMetadata.ETC.params, { key: 'CIDR' })!.value!;
     const instanceSize = _.find(envMetadata.ETC.params, { key: 'InstanceType' })!.value!;
+    const amiId = _.find(envMetadata.ETC.params, { key: 'AmiId' })!.value!;
     const keyName = _.find(envMetadata.ETC.params, { key: 'KeyName' })!.value!;
     const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
 
@@ -47,7 +48,7 @@ export default class Ec2SpyderEnvironmentLifecycleService implements Environment
     await createRoute53Record(applicationUrl, secureConnectionMetadata);
 
     const ssmParameters = {
-      InstanceName: [`ec2spyderinstance-${Date.now()}`],
+      InstanceName: [`ec2rstudioinstance-${Date.now()}`],
       VPC: [envMetadata.PROJ.vpcId],
       Subnet: [envMetadata.PROJ.subnetId],
       ProvisioningArtifactId: [envMetadata.ETC.provisioningArtifactId],
@@ -61,6 +62,7 @@ export default class Ec2SpyderEnvironmentLifecycleService implements Environment
       EnvironmentInstanceFiles: [envMetadata.PROJ.environmentInstanceFiles],
       IamPolicyDocument: [iamPolicyDocument],
       S3Mounts: [s3Mounts],
+      AmiId: [amiId],
       KeyName: [keyName],
       ALBSecurityGroup: [albSecurityGroupId],
       ListenerArn: [listenerArn],
@@ -90,7 +92,6 @@ export default class Ec2SpyderEnvironmentLifecycleService implements Environment
     const { partnerDomain } = secureConnectionMetadata;
     const applicationUrl = `${this._envType}-${envId}.${partnerDomain}`;
     await deleteRoute53Record(applicationUrl, secureConnectionMetadata);
-
     const ssmParameters = {
       ProvisionedProductId: [provisionedProductId],
       TerminateToken: [uuidv4()],

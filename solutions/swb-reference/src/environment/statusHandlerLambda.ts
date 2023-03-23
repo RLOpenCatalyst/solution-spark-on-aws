@@ -45,6 +45,11 @@ export async function handler(event: any) {
       instanceArnRecordKey: 'RstudioInstanceArn',
       instanceRoleName: 'RstudioInstanceRoleArn'
     },
+    ec2Rstudio421: {
+      instanceNameRecordKey: 'RstudioInstanceId',
+      instanceArnRecordKey: 'RstudioInstanceArn',
+      instanceRoleName: 'RstudioInstanceRoleArn'
+    },
     ec2Spyder: {
       instanceNameRecordKey: 'SpyderInstanceId',
       instanceArnRecordKey: 'SpyderInstanceArn',

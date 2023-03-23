@@ -5,11 +5,8 @@
 import { ElasticLoadBalancingV2 } from '@aws-sdk/client-elastic-load-balancing-v2';
 import { Route53 } from '@aws-sdk/client-route-53';
 import { AwsService } from '@aws/workbench-core-base';
-import {
-  EnvironmentService
-} from '@aws/workbench-core-environments';
+import { EnvironmentService } from '@aws/workbench-core-environments';
 import _ from 'lodash';
-
 
 async function calculateRulePriority(envId: string, envType: string): Promise<string> {
   const envService = new EnvironmentService({ TABLE_NAME: process.env.STACK_NAME! });
@@ -24,27 +21,27 @@ async function calculateRulePriority(envId: string, envType: string): Promise<st
     roleArn: envDetails.PROJ.envMgmtRoleArn,
     roleSessionName: `RulePriority-${envType}-${Date.now()}`,
     externalId: envDetails.PROJ.externalId,
-    region: process.env.AWS_REGION!,
+    region: process.env.AWS_REGION!
   });
 
   const params = {
-    ListenerArn: secureConnectionMetadata.listenerArn,
+    ListenerArn: secureConnectionMetadata.listenerArn
   };
 
   const response = await elbv2.describeRules(params);
   const rules = response.Rules!;
   // Returns list of priorities, returns 0 for default rule
-  const priorities = _.map(rules, rule => {
+  const priorities = _.map(rules, (rule) => {
     return rule.IsDefault ? 0 : _.toInteger(rule.Priority);
   });
-  return (_.max(priorities)! + 1).toString();;
+  return (_.max(priorities)! + 1).toString();
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 async function createRoute53Record(applicationUrl: string, secureConnectionMetadata?: any): Promise<void> {
   const { hostedZoneId, albDnsName } = secureConnectionMetadata;
   await changeResourceRecordSets('CREATE', hostedZoneId, applicationUrl, 'CNAME', albDnsName);
-  console.log('Created Route53 record')
+  console.log('Created Route53 record');
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -63,14 +60,18 @@ async function getEnvIdFromInstanceId(instanceId: string): Promise<string> {
   const ddbService = aws.helpers.ddb;
   const scanner = ddbService.scan({
     filter: 'instanceId = :val',
-    values: { ":val": `${instanceId}` }
+    values: { ':val': `${instanceId}` }
   });
   const response = await scanner.execute();
-  return `${response!.Items![0].id!}`
+  return `${response!.Items![0].id!}`;
 }
 
 async function changeResourceRecordSets(
-  action: string, hostedZoneId: string, subdomain: string, recordType: string, recordValue: string
+  action: string,
+  hostedZoneId: string,
+  subdomain: string,
+  recordType: string,
+  recordValue: string
 ): Promise<void> {
   const route53Client = await getRoute53SDKForBase();
   const params = {
@@ -83,11 +84,11 @@ async function changeResourceRecordSets(
             Name: subdomain,
             Type: recordType,
             TTL: 300,
-            ResourceRecords: [{ Value: recordValue }],
-          },
-        },
-      ],
-    },
+            ResourceRecords: [{ Value: recordValue }]
+          }
+        }
+      ]
+    }
   };
   await route53Client.changeResourceRecordSets(params);
 }
@@ -122,9 +123,4 @@ async function getElbSDKForRole(params: {
   }
 }
 
-export {
-  calculateRulePriority,
-  createRoute53Record,
-  deleteRoute53Record,
-  getEnvIdFromInstanceId
-};
+export { calculateRulePriority, createRoute53Record, deleteRoute53Record, getEnvIdFromInstanceId };
