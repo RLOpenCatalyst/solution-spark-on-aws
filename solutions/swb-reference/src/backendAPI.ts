@@ -22,6 +22,8 @@ import { LoggingService } from '@aws/workbench-core-logging';
 import { Express } from 'express';
 import ec2RstudioEnvironmentConnectionService from './environment/ec2Rstudio/ec2RstudioEnvironmentConnectionService';
 import ec2RstudioEnvironmentLifecycleService from './environment/ec2Rstudio/ec2RstudioEnvironmentLifecycleService';
+import ec2Rstudio421EnvironmentConnectionService from './environment/ec2Rstudio421/ec2Rstudio421EnvironmentConnectionService';
+import ec2Rstudio421EnvironmentLifecycleService from './environment/ec2Rstudio421/ec2Rstudio421EnvironmentLifecycleService';
 import ec2SpyderEnvironmentConnectionService from './environment/ec2Spyder/ec2SpyderEnvironmentConnectionService';
 import ec2SpyderEnvironmentLifecycleService from './environment/ec2Spyder/ec2SpyderEnvironmentLifecycleService';
 import SagemakerNotebookEnvironmentConnectionService from './environment/sagemakerNotebook/sagemakerNotebookEnvironmentConnectionService';
@@ -50,6 +52,10 @@ const apiRouteConfig: ApiRouteConfig = {
     ec2Rstudio: {
       lifecycle: new ec2RstudioEnvironmentLifecycleService(),
       connection: new ec2RstudioEnvironmentConnectionService()
+    },
+    ec2Rstudio421: {
+      lifecycle: new ec2Rstudio421EnvironmentLifecycleService(),
+      connection: new ec2Rstudio421EnvironmentConnectionService()
     },
     ec2Spyder: {
       lifecycle: new ec2SpyderEnvironmentLifecycleService(),

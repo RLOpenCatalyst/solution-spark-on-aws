@@ -34,7 +34,8 @@ function getConstants(): {
   CLIENT_ID: string;
   CLIENT_SECRET: string;
   MAIN_ACCT_ENCRYPTION_KEY_ARN_OUTPUT_KEY: string;
-  SECURE_CONNECTION_METADATA: string
+  SECURE_CONNECTION_METADATA: string;
+  JWT_SECRET: string;
 } {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const config: any = yaml.load(
@@ -63,6 +64,7 @@ function getConstants(): {
   const CLIENT_ID = config.clientId;
   const CLIENT_SECRET = config.clientSecret;
   const SECURE_CONNECTION_METADATA: object = config.secureConnectionMetadata || {};
+  const JWT_SECRET = config.jwtSecret;
 
   const AMI_IDS: string[] = [];
 
@@ -102,7 +104,8 @@ function getConstants(): {
     CLIENT_ID,
     CLIENT_SECRET,
     MAIN_ACCT_ENCRYPTION_KEY_ARN_OUTPUT_KEY,
-    SECURE_CONNECTION_METADATA: JSON.stringify(SECURE_CONNECTION_METADATA)
+    SECURE_CONNECTION_METADATA: JSON.stringify(SECURE_CONNECTION_METADATA),
+    JWT_SECRET
   };
 }
 

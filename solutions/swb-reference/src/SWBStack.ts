@@ -57,6 +57,7 @@ export class SWBStack extends Stack {
     WEBSITE_URL: string;
     MAIN_ACCT_ENCRYPTION_KEY_ARN_OUTPUT_KEY: string;
     SECURE_CONNECTION_METADATA: string;
+    JWT_SECRET: string;
   };
 
   private _accessLogsBucket: Bucket;
@@ -87,7 +88,8 @@ export class SWBStack extends Stack {
       CLIENT_ID,
       CLIENT_SECRET,
       MAIN_ACCT_ENCRYPTION_KEY_ARN_OUTPUT_KEY,
-      SECURE_CONNECTION_METADATA
+      SECURE_CONNECTION_METADATA,
+      JWT_SECRET
     } = getConstants();
 
     super(app, STACK_NAME, {
@@ -138,7 +140,8 @@ export class SWBStack extends Stack {
       USER_POOL_ID: userPoolId,
       WEBSITE_URL,
       MAIN_ACCT_ENCRYPTION_KEY_ARN_OUTPUT_KEY,
-      SECURE_CONNECTION_METADATA
+      SECURE_CONNECTION_METADATA,
+      JWT_SECRET
     };
 
     this._createInitialOutputs(AWS_REGION, AWS_REGION_SHORT_NAME, UI_CLIENT_URL);
@@ -338,29 +341,19 @@ export class SWBStack extends Stack {
     const ec2Policy = new PolicyDocument({
       statements: [
         new PolicyStatement({
-          actions: [
-            'kms:GenerateDataKeyWithoutPlaintext'
-          ],
+          actions: ['kms:GenerateDataKeyWithoutPlaintext'],
           resources: ['*']
         }),
         new PolicyStatement({
-          actions: [
-            'ssm:GetParameters'
-          ],
+          actions: ['ssm:GetParameters'],
           resources: ['*']
         }),
         new PolicyStatement({
-          actions: [
-            'ec2:TerminateInstances'
-          ],
+          actions: ['ec2:TerminateInstances'],
           resources: ['arn:aws:ec2:*:*:instance/*']
         }),
         new PolicyStatement({
-          actions: [
-            'ec2:DescribeInstances',
-            'ec2:RunInstances',
-            'ec2:DescribeImages'
-          ],
+          actions: ['ec2:DescribeInstances', 'ec2:RunInstances', 'ec2:DescribeImages'],
           resources: ['*']
         })
       ]
@@ -834,7 +827,7 @@ export class SWBStack extends Stack {
     } else {
       const alias = new Alias(this, 'LiveAlias', {
         aliasName: 'live',
-        version: apiLambda.currentVersion,
+        version: apiLambda.currentVersion
         // provisionedConcurrentExecutions: 1
       });
       API.root.addProxy({

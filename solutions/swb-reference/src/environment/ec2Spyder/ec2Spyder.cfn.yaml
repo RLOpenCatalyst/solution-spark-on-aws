@@ -309,7 +309,7 @@ Resources:
                 set -x
                 xhost +local:all
                 # Adding sleep to wait for study mounting
-                docker run --rm -ti -v /home/ec2-user/studies:/home/ec2-user/studies --net=host -e DISPLAY=:1 relevancelab/spyder-ide:1.0.1
+                docker run --rm -ti -v /home/ec2-user/studies:/home/ec2-user/studies --net=host -e DISPLAY=:1 -e QTWEBENGINE_DISABLE_SANDBOX=1 relevancelab/spyder-ide_5.3.3:1.0.0
             '/home/ec2-user/mount_study.sh':
               mode: '000755'
               owner: 'ec2-user'
@@ -444,7 +444,7 @@ Resources:
           sudo usermod -a -G docker ec2-user
 
           # Pull docker image
-          sudo docker pull relevancelab/spyder-ide:1.0.1
+          sudo docker pull relevancelab/spyder-ide_5.3.3:1.0.0
 
           # Run init script to create files
           /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
