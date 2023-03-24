@@ -20,6 +20,8 @@ import {
 } from '@aws/workbench-core-environments';
 import { LoggingService } from '@aws/workbench-core-logging';
 import { Express } from 'express';
+import ec2JupyterLabEnvironmentConnectionService from './environment/ec2JupyterLab/ec2JupyterLabEnvironmentConnectionService';
+import ec2JupyterLabEnvironmentLifecycleService from './environment/ec2JupyterLab/ec2JupyterLabEnvironmentLifecycleService';
 import ec2RstudioEnvironmentConnectionService from './environment/ec2Rstudio/ec2RstudioEnvironmentConnectionService';
 import ec2RstudioEnvironmentLifecycleService from './environment/ec2Rstudio/ec2RstudioEnvironmentLifecycleService';
 import ec2Rstudio421EnvironmentConnectionService from './environment/ec2Rstudio421/ec2Rstudio421EnvironmentConnectionService';
@@ -56,6 +58,10 @@ const apiRouteConfig: ApiRouteConfig = {
     ec2Rstudio421: {
       lifecycle: new ec2Rstudio421EnvironmentLifecycleService(),
       connection: new ec2Rstudio421EnvironmentConnectionService()
+    },
+    ec2JupyterLab: {
+      lifecycle: new ec2JupyterLabEnvironmentLifecycleService(),
+      connection: new ec2JupyterLabEnvironmentConnectionService()
     },
     ec2Spyder: {
       lifecycle: new ec2SpyderEnvironmentLifecycleService(),

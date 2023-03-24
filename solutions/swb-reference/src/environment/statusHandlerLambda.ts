@@ -50,6 +50,11 @@ export async function handler(event: any) {
       instanceArnRecordKey: 'RstudioInstanceArn',
       instanceRoleName: 'RstudioInstanceRoleArn'
     },
+    ec2JupyterLab: {
+      instanceNameRecordKey: 'JupyterLabInstanceId',
+      instanceArnRecordKey: 'JupyterLabInstanceArn',
+      instanceRoleName: 'JupyterLabInstanceRoleArn'
+    },
     ec2Spyder: {
       instanceNameRecordKey: 'SpyderInstanceId',
       instanceArnRecordKey: 'SpyderInstanceArn',
