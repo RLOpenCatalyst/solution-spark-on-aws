@@ -319,7 +319,7 @@ Resources:
                 sleep 5
                 instance_id=$(curl -s "http://169.254.169.254/latest/meta-data/instance-id")
                 instance_region=$(curl -s "http://169.254.169.254/latest/meta-data/placement/region")
-                access_token=$((docker exec -it jupyterlab  /bin/bash -c "jupyter server list" | grep token | awk '{print $1}') | sed 's/.*=//')
+                access_token=$((docker exec jupyterlab  /bin/bash -c "jupyter server list" | grep token | awk '{print $1}') | sed 's/.*=//')
                 echo "$access_token"
                 aws ssm put-parameter --name "/jupyterlab/access-token/sc-environments/ec2-instance/$instance_id" --value $access_token --region $instance_region --type SecureString --overwrite 
                 echo "Stored jupyterlab token in SSM"

@@ -226,7 +226,8 @@ export class SWBStack extends Stack {
             'arn:aws:iam::*:role/SC-*-ServiceRole-*',
             'arn:aws:iam::*:role/*-sagemaker-notebook-role',
             'arn:aws:iam::*:role/*-ec2-rstudio-role',
-            'arn:aws:iam::*:role/*-ec2-spyder-role'
+            'arn:aws:iam::*:role/*-ec2-spyder-role',
+            'arn:aws:iam::*:role/*-ec2-jupyterlab-role'
           ]
         }),
         new PolicyStatement({
@@ -241,7 +242,8 @@ export class SWBStack extends Stack {
             'arn:aws:iam::*:instance-profile/analysis-*',
             'arn:aws:iam::*:instance-profile/SC-*-InstanceProfile-*',
             'arn:aws:iam::*:instance-profile/*-ec2-rstudio-profile',
-            'arn:aws:iam::*:instance-profile/*-ec2-spyder-profile'
+            'arn:aws:iam::*:instance-profile/*-ec2-spyder-profile',
+            'arn:aws:iam::*:instance-profile/*-ec2-jupyterlab-profile'
           ]
         }),
         new PolicyStatement({

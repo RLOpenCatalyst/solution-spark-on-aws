@@ -44,7 +44,7 @@ export default class EC2JupyterLabEnvironmentConnectionService implements Enviro
     const { partnerDomain } = secureConnectionMetadata;
     const envId = await getEnvIdFromInstanceId(instanceId);
     const accessToken = await this.getJupyterLabToken(instanceId, context);
-    const authorizedUrl = `https://${this._envType}-${envId}.${partnerDomain}/?token=${accessToken}`;
+    const authorizedUrl = `https://${this._envType}-${envId}.${partnerDomain}/lab?token=${accessToken}`;
     return authorizedUrl;
   }
 
