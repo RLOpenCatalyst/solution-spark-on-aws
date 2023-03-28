@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: 2010-09-09
 
-Description: Service-Workbench-on-AWS EC2-RStudio-RL Version
+Description: Service-Workbench-on-AWS EC2-Jupyterlab-RL Version
 Metadata:
   PartnerName: Relevance Lab
   PartnerURL: https://relevancelab.com
-  KnowMore: https://github.com/RLOpenCatalyst/Service_Workbench_Templates/tree/main/RStudio
+  KnowMore: https://github.com/RLOpenCatalyst/Service_Workbench_Templates/tree/main/Jupiter-lab
 
 Parameters:
   Namespace:
@@ -77,7 +77,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       Description: Permission boundary for EC2 instance role
-      ManagedPolicyName: !Join ['-', [Ref: Namespace, 'ec2-rstudio-permission-boundary']]
+      ManagedPolicyName: !Join ['-', [Ref: Namespace, 'ec2-jupyterlab-permission-boundary']]
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -151,7 +151,7 @@ Resources:
   IAMRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Join ['-', [Ref: Namespace, 'ec2-rstudio-role']]
+      RoleName: !Join ['-', [Ref: Namespace, 'ec2-jupyterlab-role']]
       Path: '/'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -213,7 +213,7 @@ Resources:
   InstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
     Properties:
-      InstanceProfileName: !Join ['-', [Ref: Namespace, 'ec2-rstudio-profile']]
+      InstanceProfileName: !Join ['-', [Ref: Namespace, 'ec2-jupyterlab-profile']]
       Path: '/'
       Roles:
         - Ref: IAMRole
@@ -221,7 +221,7 @@ Resources:
   SecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupDescription: EC2 Rstudio workspace security group
+      GroupDescription: EC2 Jupyterlab workspace security group
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 0
@@ -246,9 +246,9 @@ Resources:
           SourceSecurityGroupId: !Ref ALBSecurityGroup
       Tags:
         - Key: Name
-          Value: !Join ['-', [Ref: Namespace, 'ec2-rstudio-sg']]
+          Value: !Join ['-', [Ref: Namespace, 'ec2-jupyterlab-sg']]
         - Key: Description
-          Value: EC2 Rstudio workspace security group
+          Value: EC2 Jupyterlab workspace security group
       VpcId: !Ref VPC
 
   EC2Instance:
@@ -273,31 +273,31 @@ Resources:
 
                 services:
                   nginx:
+                    container_name: nginx
                     image: nginx:latest
                     ports:
                       - "80:80"
-                      - "443:443"   
+                      - "443:443"  
                     volumes:
                       - /etc/nginx/nginx.conf:/etc/nginx/nginx.conf
                       - /etc/nginx/dhparam.pem:/etc/nginx/dhparam.pem
                       - /etc/nginx/cert.key:/etc/nginx/cert.key
                       - /etc/nginx/cert.pem:/etc/nginx/cert.pem
                     networks:
-                      - rstudio-net
+                      - jupyterlab-net
 
-                  rstudio: 
-                    image: relevancelab/rstudio_4.2.1:1.0.0
+                  jupyterlab: 
+                    container_name: jupyterlab
+                    image: relevancelab/jupiterlab_3.5:1.0.0
                     ports:
-                      - "8787:8787"      
-                    environment:
-                      - PASSWORD    
+                      - "8888:8888"
                     volumes:
-                      - /home/ec2-user:/home/rstudio-user
+                      - /home/ec2-user:/home/ec2-user
                     networks:
-                      - rstudio-net
+                      - jupyterlab-net
 
                 networks:
-                  rstudio-net:
+                  jupyterlab-net:
             '/home/ec2-user/mount_study.sh':
               mode: '000755'
               owner: 'ec2-user'
@@ -308,35 +308,34 @@ Resources:
                 # Adding sleep to avoid mounting failure
                 sleep 60
                 mount_s3.sh 2>&1 >> /home/ec2-user/mount_s3.log
-            '/home/ec2-user/start_rstudio.sh':
+            '/home/ec2-user/start_jupyterlab.sh':
               mode: '000755'
               owner: 'ec2-user'
               group: 'ec2-user'
               content: !Sub |
                 #!/usr/bin/env bash
+                echo "fetching token and starting jupyterlab"
+                `docker-compose up -d`                           
+                sleep 5
                 instance_id=$(curl -s "http://169.254.169.254/latest/meta-data/instance-id")
-                secret=$(cat "/root/secret.txt")
-                echo "setting rstudio-user password and starting rstudio"
-                password=$(echo -n "$instance_id$secret" | sha256sum | awk '{print $1}')
-                `PASSWORD=$password docker-compose up -d`                              
-                sleep 10
-                public_key=$(curl http://localhost:8787/auth-public-key)
                 instance_region=$(curl -s "http://169.254.169.254/latest/meta-data/placement/region")
-                aws ssm put-parameter --name "/rstudio/publickey/sc-environments/ec2-instance/$instance_id" --value $public_key --region $instance_region --type SecureString --overwrite 
-                echo "Stored rstudio public key in SSM"
-            '/var/log/rstudio.log':
+                access_token=$((docker exec jupyterlab  /bin/bash -c "jupyter server list" | grep token | awk '{print $1}') | sed 's/.*=//')
+                echo "$access_token"
+                aws ssm put-parameter --name "/jupyterlab/access-token/sc-environments/ec2-instance/$instance_id" --value $access_token --region $instance_region --type SecureString --overwrite 
+                echo "Stored jupyterlab token in SSM"
+            '/var/log/jupyterlab.log':
               content: "\n"
               mode: '000664'
               owner: 'ec2-user'
               group: 'ec2-user'
         config2:
           commands:
-            01_mount_study:
+            01_start_jupyterlab:
+              cwd: '/home/ec2-user'
+              command: '/home/ec2-user/start_jupyterlab.sh'
+            02_mount_study:
               cwd: '/home/ec2-user'
               command: '/home/ec2-user/mount_study.sh'
-            02_start_rstudio:
-              cwd: '/home/ec2-user'
-              command: '/home/ec2-user/start_rstudio.sh'
     Properties:
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref InstanceProfile
@@ -356,16 +355,15 @@ Resources:
           SubnetId: !Ref Subnet
       Tags:
         - Key: Name
-          Value: !Join ['-', [Ref: Namespace, 'ec2-rstudio']]
+          Value: !Join ['-', [Ref: Namespace, 'ec2-jupyterlab']]
         - Key: Description
-          Value: EC2 Rstudio workspace instance
+          Value: EC2 Jupyterlab workspace instance
 
       UserData:
         Fn::Base64: !Sub |
           #!/usr/bin/env bash
           exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
-          # Install docker and pull necessary containers
           sudo yum install -y docker
           sudo systemctl enable docker.service
           sudo systemctl enable containerd.service
@@ -374,32 +372,29 @@ Resources:
           sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose          
-          docker pull relevancelab/rstudio_4.2.1:1.0.0
+          docker pull relevancelab/jupiterlab_3.5:1.0.0 
           docker pull nginx
 
           # Copy environment instance files needed for the workspace
-          aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/rstudio/" "/tmp/rstudio" --recursive
+          aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/jupyterlab/" "/tmp/jupyterlab" --recursive
           aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/create_self_signed_cert.sh" "/tmp"
-          aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/secret.txt" "/root"
 
           mkdir -p "/etc/nginx"
-          mv /tmp/rstudio/nginx.conf /etc/nginx/nginx.conf
-
-          # Create self signed certificates
+          mv /tmp/jupyterlab/nginx.conf /etc/nginx/nginx.conf
           chmod 500 "/tmp/create_self_signed_cert.sh"
-          /tmp/create_self_signed_cert.sh
+          /tmp/create_self_signed_cert.sh          
 
-          # Add command to start rstudio at reboot
+          /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
+          # /home/ec2-user/start_jupyterlab.sh         
+
+          #add command to start jupyterlab at reboot
           sudo crontab -l 2>/dev/null > "/tmp/crontab"
-          echo '@reboot cd /home/ec2-user && sudo /home/ec2-user/start_rstudio.sh 2>&1 >> /var/log/rstudio.log' >> "/tmp/crontab"
+          echo '@reboot cd /home/ec2-user && sudo /home/ec2-user/start_jupyterlab.sh 2>&1 >> /var/log/jupyterlab.log' >> "/tmp/crontab"
           sudo crontab "/tmp/crontab"
 
-          # Mount study
           aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/get_bootstrap.sh" "/tmp"
           chmod 500 "/tmp/get_bootstrap.sh"
           /tmp/get_bootstrap.sh "${EnvironmentInstanceFiles}" '${S3Mounts}' "${AWS::Region}"
-
-          /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
 
           # Signal result to CloudFormation
           /opt/aws/bin/cfn-signal -e $? --stack "${AWS::StackName}" --resource "EC2Instance" --region "${AWS::Region}"
@@ -437,16 +432,16 @@ Resources:
       Priority: !Ref ListenerRulePriority
 
 Outputs:
-  RstudioInstanceArn:
+  JupyterlabInstanceArn:
     Description: ARN of the EC2 workspace instance
     Value: !Sub
       - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${INSTANCE_ID}
       - INSTANCE_ID: !Ref EC2Instance
 
-  RstudioInstanceId:
+  JupyterlabInstanceId:
     Description: Instance Id for the EC2 workspace instance
     Value: !Ref EC2Instance
 
-  RstudioInstanceRoleArn:
+  JupyterlabInstanceRoleArn:
     Description: IAM role assumed by the EC2 workspace instance
     Value: !GetAtt IAMRole.Arn
