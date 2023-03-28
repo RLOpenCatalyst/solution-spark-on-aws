@@ -69,6 +69,11 @@ export async function handler(event: any) {
       instanceNameRecordKey: 'SpyderInstanceId',
       instanceArnRecordKey: 'SpyderInstanceArn',
       instanceRoleName: 'SpyderInstanceRoleArn'
+    },
+    ec2Stata: {
+      instanceNameRecordKey: 'StataInstanceId',
+      instanceArnRecordKey: 'StataInstanceArn',
+      instanceRoleName: 'StataInstanceRoleArn'
     }
 
     // Add your new env types here
