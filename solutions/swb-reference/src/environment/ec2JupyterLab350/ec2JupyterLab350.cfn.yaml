@@ -408,7 +408,7 @@ Resources:
       HealthyThresholdCount: 5
       Matcher:
         HttpCode: '200,301,302'
-      Name: !Join ['-', [Ref: Namespace, 'tg']]
+      Name: !Ref Namespace
       Port: 443
       Protocol: HTTPS
       Targets:

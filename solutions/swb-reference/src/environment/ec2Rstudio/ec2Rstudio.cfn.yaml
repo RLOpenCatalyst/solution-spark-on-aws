@@ -308,7 +308,7 @@ Resources:
                 set -x
                 # Adding sleep to avoid mounting failure
                 sleep 60
-                mount_s3.sh 2>&1 >> /home/ec2-user/mount_s3.log
+                su - ec2-user -c "env PATH=$PATH:/usr/local/bin mount_s3.sh" 2>&1 >> /home/ec2-user/mount_s3.log
             '/home/ec2-user/start_rstudio.sh':
               mode: '000755'
               owner: 'ec2-user'

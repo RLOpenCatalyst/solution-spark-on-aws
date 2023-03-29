@@ -14,7 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { calculateRulePriority, createRoute53Record, deleteRoute53Record } from '../envUtils';
 
-export default class EC2JupyterLab520EnvironmentLifecycleService implements EnvironmentLifecycleService {
+export default class EC2JupyterLab350EnvironmentLifecycleService implements EnvironmentLifecycleService {
   public helper: EnvironmentLifecycleHelper;
   public aws: AwsService;
   public envService: EnvironmentService;
