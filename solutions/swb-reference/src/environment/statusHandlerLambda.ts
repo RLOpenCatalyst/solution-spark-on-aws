@@ -50,10 +50,30 @@ export async function handler(event: any) {
       instanceArnRecordKey: 'RstudioInstanceArn',
       instanceRoleName: 'RstudioInstanceRoleArn'
     },
+    ec2JupyterLab: {
+      instanceNameRecordKey: 'JupyterlabInstanceId',
+      instanceArnRecordKey: 'JupyterlabInstanceArn',
+      instanceRoleName: 'JupyterlabInstanceRoleArn'
+    },
+    ec2JupyterLab350: {
+      instanceNameRecordKey: 'JupyterlabInstanceId',
+      instanceArnRecordKey: 'JupyterlabInstanceArn',
+      instanceRoleName: 'JupyterlabInstanceRoleArn'
+    },
     ec2Spyder: {
       instanceNameRecordKey: 'SpyderInstanceId',
       instanceArnRecordKey: 'SpyderInstanceArn',
       instanceRoleName: 'SpyderInstanceRoleArn'
+    },
+    ec2Spyder522: {
+      instanceNameRecordKey: 'SpyderInstanceId',
+      instanceArnRecordKey: 'SpyderInstanceArn',
+      instanceRoleName: 'SpyderInstanceRoleArn'
+    },
+    ec2Stata: {
+      instanceNameRecordKey: 'StataInstanceId',
+      instanceArnRecordKey: 'StataInstanceArn',
+      instanceRoleName: 'StataInstanceRoleArn'
     }
 
     // Add your new env types here

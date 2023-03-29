@@ -22,7 +22,16 @@ export default class Workflow {
   public createSSMDocuments(): void {
     const { SSM_DOC_OUTPUT_KEY_SUFFIX } = getConstants();
     // Add your new environment type here. The name should exactly match the folder name of the new environment type in the environment folder
-    const envTypes = ['sagemakerNotebook', 'ec2Rstudio', 'ec2Rstudio421', 'ec2Spyder'];
+    const envTypes = [
+      'sagemakerNotebook',
+      'ec2Rstudio',
+      'ec2Rstudio421',
+      'ec2Spyder',
+      'ec2Spyder522',
+      'ec2JupyterLab',
+      'ec2JupyterLab350',
+      'ec2Stata'
+    ];
 
     envTypes.forEach((envType) => {
       const docTypes = ['Launch', 'Terminate'];

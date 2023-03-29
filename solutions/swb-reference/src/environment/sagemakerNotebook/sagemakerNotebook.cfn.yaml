@@ -248,12 +248,12 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       RoleArn: !GetAtt IAMRole.Arn
+      PlatformIdentifier: notebook-al2-v1
       SubnetId: !Ref Subnet
       SecurityGroupIds:
         - !Ref SecurityGroup
       DirectInternetAccess: Enabled
       LifecycleConfigName: !GetAtt BasicNotebookInstanceLifecycleConfig.NotebookInstanceLifecycleConfigName
-      PlatformIdentifier: notebook-al2-v1
       KmsKeyId: !Ref EncryptionKeyArn
 
   # Add script for mounting studies and autostop
