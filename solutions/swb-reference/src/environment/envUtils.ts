@@ -34,7 +34,11 @@ async function calculateRulePriority(envId: string, envType: string): Promise<st
   const priorities = _.map(rules, (rule) => {
     return rule.IsDefault ? 0 : _.toInteger(rule.Priority);
   });
-  return (_.max(priorities)! + 1).toString();
+  // Adding currently provisioing products to list to avoid priority clash.
+  // TBC to a better approach
+  const pendingEnvironments = await getPendingEnvironmentsCount();
+  const rulePriority = pendingEnvironments + _.max(priorities)! + 1;
+  return rulePriority.toString();
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -64,6 +68,17 @@ async function getEnvIdFromInstanceId(instanceId: string): Promise<string> {
   });
   const response = await scanner.execute();
   return `${response!.Items![0].id!}`;
+}
+
+async function getPendingEnvironmentsCount(): Promise<number> {
+  const aws = new AwsService({ region: process.env.AWS_REGION!, ddbTableName: process.env.STACK_NAME! });
+  const ddbService = aws.helpers.ddb;
+  const scanner = ddbService.scan({
+    filter: 'status = :val1 AND resourceType = :val2',
+    values: { ':val1': `PENDING`, ':val2': 'environment' }
+  });
+  const response = await scanner.execute();
+  return response!.Items!.length;
 }
 
 async function changeResourceRecordSets(
