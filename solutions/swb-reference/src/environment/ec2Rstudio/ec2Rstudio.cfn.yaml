@@ -305,7 +305,6 @@ Resources:
               group: 'ec2-user'
               content: !Sub |
                 #!/bin/sh
-                set -x
                 # Adding sleep to avoid mounting failure
                 sleep 60
                 su - ec2-user -c "env PATH=$PATH:/usr/local/bin mount_s3.sh" 2>&1 >> /home/ec2-user/mount_s3.log
