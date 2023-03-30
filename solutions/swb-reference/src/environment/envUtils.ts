@@ -74,7 +74,8 @@ async function getPendingEnvironmentsCount(): Promise<number> {
   const aws = new AwsService({ region: process.env.AWS_REGION!, ddbTableName: process.env.STACK_NAME! });
   const ddbService = aws.helpers.ddb;
   const scanner = ddbService.scan({
-    filter: 'status = :val1 AND resourceType = :val2',
+    filter: '#status = :val1 AND resourceType = :val2',
+    names: { '#status': 'status' },
     values: { ':val1': `PENDING`, ':val2': 'environment' }
   });
   const response = await scanner.execute();
