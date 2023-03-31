@@ -292,7 +292,7 @@ Resources:
                     ports:
                       - "8888:8888"
                     volumes:
-                      - /home/ec2-user:/home/ec2-user
+                      - /home/ec2-user:/home/ec2-user/host
                     networks:
                       - jupyterlab-net
 
