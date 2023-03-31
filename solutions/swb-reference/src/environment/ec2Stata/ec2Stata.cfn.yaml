@@ -5,27 +5,14 @@ Metadata:
   PartnerName: Relevance Lab
   PartnerURL: https://relevancelab.com
 
-Mappings:
-  RegionMap:
-    us-east-1:
-      AmiID: 'ami-0759d9ecf1fcb7be9'
-    us-east-2:
-      AmiID: 'ami-018bd425554ab6cf4'
-    us-west-1:
-      AmiID: 'ami-02258ab533d22fa75'
-    us-west-2:
-      AmiID: 'ami-02d3838a1d948d3ca'
-    ap-south-1:
-      AmiID: 'ami-0c33a5a105981b1fb'
-    ap-southeast-1:
-      AmiID: 'ami-061f216d271a880ce'
-    ap-southeast-2:
-      AmiID: 'ami-0d1748650516fb8a3'
-
 Parameters:
   Namespace:
     Type: String
     Description: An environment name that will be prefixed to resource names
+  AmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Description: Amazon Machine Image for the EC2 instance
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
   InstanceType:
     Type: String
     Description: EC2 instance type to launch
@@ -284,8 +271,22 @@ Resources:
                 NoDisplay=false
                 X-GNOME-Autostart-enabled=true
                 Terminal=true
-                Name=stata
-                Comment=stata Desktop
+                Name=Stata
+                Comment=Stata Desktop
+            '/home/ec2-user/.config/autostart/studymount.desktop':
+              mode: '000644'
+              owner: 'ec2-user'
+              group: 'ec2-user'
+              content: |
+                [Desktop Entry]
+                Type=Application
+                Exec="/home/ec2-user/mount_study.sh"
+                Hidden=false
+                NoDisplay=false
+                X-GNOME-Autostart-enabled=true
+                Terminal=true
+                Name=Study-Mounting
+                Comment=Study Mounting
             '/home/ec2-user/start_stata.sh':
               mode: '000755'
               owner: 'ec2-user'
@@ -294,7 +295,16 @@ Resources:
                 #!/bin/sh
                 set -x
                 xhost +local:all
-                docker run --rm -it -v /home/ec2-user/stata.lic:/usr/local/stata/stata.lic dataeditors/stata17:2023-03-08
+                # Adding sleep to wait for study mounting
+                sleep 30
+                docker run --rm -it -v /home/ec2-user/stata.lic:/usr/local/stata/stata.lic -v /home/ec2-user:/home/ec2-user dataeditors/stata17:2023-03-08
+            '/home/ec2-user/mount_study.sh':
+              mode: '000755'
+              owner: 'ec2-user'
+              group: 'ec2-user'
+              content: !Sub |
+                #!/bin/sh
+                mount_s3.sh 2>&1 >> /home/ec2-user/mount_s3.log
             '/home/ec2-user/set_user_token.sh':
               content: !Sub |
                 #!/bin/bash
@@ -356,14 +366,14 @@ Resources:
             02_set_user_token:
               cwd: '/home/ec2-user'
               command: 'sudo -u ec2-user /home/ec2-user/set_user_token.sh'
+            03_create_application_desktop:
+              cwd: '/home/ec2-user'
+              command: 'sudo -u ec2-user cp /home/ec2-user/.config/autostart/stata.desktop /home/ec2-user/Desktop'
     Properties:
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyName
-      ImageId: !FindInMap
-        - RegionMap
-        - !Ref 'AWS::Region'
-        - AmiID
+      ImageId: !Ref 'AmiId'
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -408,19 +418,8 @@ Resources:
           sudo chmod 775 "/usr/local/bin/start-dcv-session"
           sudo sh "/usr/local/bin/start-dcv-session"
 
-          # Install Docker
-          sudo yum install -y docker
-          sudo systemctl enable docker.service
-          sudo systemctl enable containerd.service
-          sudo systemctl start docker
-          sudo usermod -a -G docker ec2-user
-
           # Pull docker image
           sudo docker pull dataeditors/stata17:2023-03-08
-
-          # Copy environment instance files needed for the workspace
-          aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/stata/stata.lic" "/tmp/stata/"
-          mv /tmp/stata/stata.lic /home/ec2-user/stata.lic
 
           # Run init script to create files
           /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
@@ -432,9 +431,9 @@ Resources:
           echo '@reboot /home/ec2-user/set_user_token.sh 2>&1 >> /var/log/set_user_token.log' >> "/tmp/crontab"
           sudo crontab "/tmp/crontab"
 
-          # Restart DCV session to start Stata
-          dcv close-session swb-session
-          sudo sh "/usr/local/bin/start-dcv-session"
+          # Restart DCV session to start stata
+          #dcv close-session swb-session
+          #sudo sh "/usr/local/bin/start-dcv-session"
 
           # Remove password and lock for ec2-user
           sudo passwd -l ec2-user
@@ -444,6 +443,14 @@ Resources:
           aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/get_bootstrap.sh" "/tmp"
           chmod 500 "/tmp/get_bootstrap.sh"
           /tmp/get_bootstrap.sh "${EnvironmentInstanceFiles}" '${S3Mounts}' "${AWS::Region}"
+
+          # Copy environment instance files needed for the workspace
+          aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/stata/stata.lic" "/tmp/stata/"
+          mv /tmp/stata/stata.lic /home/ec2-user/stata.lic
+
+          # Restart DCV session to start stata
+          dcv close-session swb-session
+          sudo sh "/usr/local/bin/start-dcv-session"
 
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
 

@@ -29,6 +29,7 @@ export default class EC2StataEnvironmentLifecycleService implements EnvironmentL
   public async launch(envMetadata: any): Promise<{ [id: string]: string }> {
     const cidr = _.find(envMetadata.ETC.params, { key: 'CIDR' })!.value!;
     const instanceSize = _.find(envMetadata.ETC.params, { key: 'InstanceType' })!.value!;
+    const amiId = _.find(envMetadata.ETC.params, { key: 'AmiId' })!.value!;
     const keyName = _.find(envMetadata.ETC.params, { key: 'KeyName' })!.value!;
     const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
 
@@ -61,6 +62,7 @@ export default class EC2StataEnvironmentLifecycleService implements EnvironmentL
       EnvironmentInstanceFiles: [envMetadata.PROJ.environmentInstanceFiles],
       IamPolicyDocument: [iamPolicyDocument],
       S3Mounts: [s3Mounts],
+      AmiId: [amiId],
       KeyName: [keyName],
       ALBSecurityGroup: [albSecurityGroupId],
       ListenerArn: [listenerArn],
