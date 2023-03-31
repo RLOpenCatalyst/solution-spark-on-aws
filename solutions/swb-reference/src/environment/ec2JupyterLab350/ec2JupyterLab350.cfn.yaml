@@ -288,11 +288,11 @@ Resources:
 
                   jupyterlab: 
                     container_name: jupyterlab
-                    image: relevancelab/jupiterlab_3.5:1.0.0
+                    image: relevancelab/jupiterlab_3.5.0:1.0.1
                     ports:
                       - "8888:8888"
                     volumes:
-                      - /home/ec2-user:/home/ec2-user
+                      - /home/ec2-user:/home/ec2-user/host
                     networks:
                       - jupyterlab-net
 
@@ -304,10 +304,7 @@ Resources:
               group: 'ec2-user'
               content: !Sub |
                 #!/bin/sh
-                set -x
-                # Adding sleep to avoid mounting failure
-                sleep 60
-                mount_s3.sh 2>&1 >> /home/ec2-user/mount_s3.log
+                su - ec2-user -c "env PATH=$PATH:/usr/local/bin mount_s3.sh" 2>&1 >> /home/ec2-user/mount_s3.log
             '/home/ec2-user/start_jupyterlab.sh':
               mode: '000755'
               owner: 'ec2-user'
@@ -319,7 +316,7 @@ Resources:
                 sleep 5
                 instance_id=$(curl -s "http://169.254.169.254/latest/meta-data/instance-id")
                 instance_region=$(curl -s "http://169.254.169.254/latest/meta-data/placement/region")
-                access_token=$((docker exec jupyterlab  /bin/bash -c "jupyter server list" | grep token | awk '{print $1}') | sed 's/.*=//')
+                access_token=$(docker exec jupyterlab /bin/bash -c "jupyter server list" 2>&1 | sed -nE 's/.*\?token=([^ ]+).*/\1/p')
                 echo "$access_token"
                 aws ssm put-parameter --name "/jupyterlab/access-token/sc-environments/ec2-instance/$instance_id" --value $access_token --region $instance_region --type SecureString --overwrite 
                 echo "Stored jupyterlab token in SSM"
@@ -330,12 +327,13 @@ Resources:
               group: 'ec2-user'
         config2:
           commands:
-            01_start_jupyterlab:
-              cwd: '/home/ec2-user'
-              command: '/home/ec2-user/start_jupyterlab.sh'
-            02_mount_study:
+            01_mount_study:
               cwd: '/home/ec2-user'
               command: '/home/ec2-user/mount_study.sh'
+            02_start_jupyterlab:
+              cwd: '/home/ec2-user'
+              command: '/home/ec2-user/start_jupyterlab.sh'
+
     Properties:
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref InstanceProfile
@@ -372,29 +370,31 @@ Resources:
           sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose          
-          docker pull relevancelab/jupiterlab_3.5:1.0.0 
+          docker pull relevancelab/jupiterlab_3.5.0:1.0.1 
           docker pull nginx
 
           # Copy environment instance files needed for the workspace
           aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/jupyterlab/" "/tmp/jupyterlab" --recursive
           aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/create_self_signed_cert.sh" "/tmp"
 
+          # Commands to create self signed certificates and supported files.
           mkdir -p "/etc/nginx"
           mv /tmp/jupyterlab/nginx.conf /etc/nginx/nginx.conf
           chmod 500 "/tmp/create_self_signed_cert.sh"
-          /tmp/create_self_signed_cert.sh          
+          /tmp/create_self_signed_cert.sh                       
 
-          /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
-          # /home/ec2-user/start_jupyterlab.sh         
-
-          #add command to start jupyterlab at reboot
+          # add command to start jupyterlab at reboot
           sudo crontab -l 2>/dev/null > "/tmp/crontab"
           echo '@reboot cd /home/ec2-user && sudo /home/ec2-user/start_jupyterlab.sh 2>&1 >> /var/log/jupyterlab.log' >> "/tmp/crontab"
           sudo crontab "/tmp/crontab"
 
+          # Copy and run bootstrap scripts.
           aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/get_bootstrap.sh" "/tmp"
           chmod 500 "/tmp/get_bootstrap.sh"
           /tmp/get_bootstrap.sh "${EnvironmentInstanceFiles}" '${S3Mounts}' "${AWS::Region}"
+
+          # init command to create files from config
+          /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
 
           # Signal result to CloudFormation
           /opt/aws/bin/cfn-signal -e $? --stack "${AWS::StackName}" --resource "EC2Instance" --region "${AWS::Region}"

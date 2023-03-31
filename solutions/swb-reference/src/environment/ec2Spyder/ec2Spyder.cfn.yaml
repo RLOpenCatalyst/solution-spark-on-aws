@@ -5,27 +5,14 @@ Metadata:
   PartnerName: Relevance Lab
   PartnerURL: https://relevancelab.com
 
-Mappings:
-  RegionMap:
-    us-east-1:
-      AmiID: 'ami-0759d9ecf1fcb7be9'
-    us-east-2:
-      AmiID: 'ami-018bd425554ab6cf4'
-    us-west-1:
-      AmiID: 'ami-02258ab533d22fa75'
-    us-west-2:
-      AmiID: 'ami-02d3838a1d948d3ca'
-    ap-south-1:
-      AmiID: 'ami-0c33a5a105981b1fb'
-    ap-southeast-1:
-      AmiID: 'ami-061f216d271a880ce'
-    ap-southeast-2:
-      AmiID: 'ami-0d1748650516fb8a3'
-
 Parameters:
   Namespace:
     Type: String
     Description: An environment name that will be prefixed to resource names
+  AmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Description: Amazon Machine Image for the EC2 instance
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
   InstanceType:
     Type: String
     Description: EC2 instance type to launch
@@ -309,16 +296,14 @@ Resources:
                 set -x
                 xhost +local:all
                 # Adding sleep to wait for study mounting
-                docker run --rm -ti -v /home/ec2-user/studies:/home/ec2-user/studies --net=host -e DISPLAY=:1 -e QTWEBENGINE_DISABLE_SANDBOX=1 relevancelab/spyder-ide_5.3.3:1.0.0
+                sleep 30
+                docker run --rm -ti -v /home/ec2-user/studies:/home/ec2-user/studies --net=host -e DISPLAY=:1 -e QTWEBENGINE_DISABLE_SANDBOX=1 relevancelab/spyder-ide_5.3.3:1.0.3
             '/home/ec2-user/mount_study.sh':
               mode: '000755'
               owner: 'ec2-user'
               group: 'ec2-user'
               content: !Sub |
                 #!/bin/sh
-                set -x
-                # Adding sleep to avoid mounting failure
-                sleep 30
                 mount_s3.sh 2>&1 >> /home/ec2-user/mount_s3.log
             '/home/ec2-user/set_user_token.sh':
               content: !Sub |
@@ -388,10 +373,7 @@ Resources:
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyName
-      ImageId: !FindInMap
-        - RegionMap
-        - !Ref 'AWS::Region'
-        - AmiID
+      ImageId: !Ref 'AmiId'
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -436,15 +418,8 @@ Resources:
           sudo chmod 775 "/usr/local/bin/start-dcv-session"
           sudo sh "/usr/local/bin/start-dcv-session"
 
-          # Install Docker
-          sudo yum install -y docker
-          sudo systemctl enable docker.service
-          sudo systemctl enable containerd.service
-          sudo systemctl start docker
-          sudo usermod -a -G docker ec2-user
-
           # Pull docker image
-          sudo docker pull relevancelab/spyder-ide_5.3.3:1.0.0
+          sudo docker pull relevancelab/spyder-ide_5.3.3:1.0.3
 
           # Run init script to create files
           /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}

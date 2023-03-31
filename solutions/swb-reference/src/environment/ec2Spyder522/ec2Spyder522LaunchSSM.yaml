@@ -35,6 +35,10 @@ parameters:
     description: 'The namespace to be used for creating the CfN stack resources'
     default: 'swbv2-Spyder'
     allowedPattern: ^[a-zA-Z0-9_\-]{1,100}$
+  AmiId:
+    type: String
+    description: 'Amazon Machine Image for the Rstudio instance'
+    allowedPattern: ^[a-zA-Z0-9_\/-]{1,100}$
   KeyName:
     type: String
     description: '(Required) Keypair name for SSH access'
@@ -110,6 +114,8 @@ mainSteps:
       ProvisioningParameters:
         - Key: Namespace
           Value: '{{ Namespace }}'
+        - Key: AmiId
+          Value: '{{ AmiId }}'
         - Key: InstanceType
           Value: '{{ InstanceType }}'
         - Key: KeyName
