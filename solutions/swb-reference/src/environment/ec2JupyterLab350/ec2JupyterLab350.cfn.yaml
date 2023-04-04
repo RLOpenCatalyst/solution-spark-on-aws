@@ -288,7 +288,7 @@ Resources:
 
                   jupyterlab: 
                     container_name: jupyterlab
-                    image: relevancelab/jupiterlab_3.5.0:1.0.1
+                    image: relevancelab/jupiterlab_3.5.0:1.0.2
                     ports:
                       - "8888:8888"
                     volumes:
@@ -342,7 +342,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 8
+            VolumeSize: 32
             Encrypted: true
             KmsKeyId: !Ref EncryptionKeyArn
       NetworkInterfaces:
@@ -370,7 +370,7 @@ Resources:
           sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose          
-          docker pull relevancelab/jupiterlab_3.5.0:1.0.1 
+          docker pull relevancelab/jupiterlab_3.5.0:1.0.2
           docker pull nginx
 
           # Copy environment instance files needed for the workspace
