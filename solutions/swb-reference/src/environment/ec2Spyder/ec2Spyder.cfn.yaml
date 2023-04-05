@@ -297,7 +297,7 @@ Resources:
                 xhost +local:all
                 # Adding sleep to wait for study mounting
                 sleep 30
-                docker run --rm -ti -v /home/ec2-user/studies:/home/ec2-user/studies --net=host -e DISPLAY=:1 -e QTWEBENGINE_DISABLE_SANDBOX=1 relevancelab/spyder-ide_5.3.3:1.0.3
+                docker run --rm -ti -v /home/ec2-user:/home/ec2-user/host --net=host -e DISPLAY=:1 -e QTWEBENGINE_DISABLE_SANDBOX=1 relevancelab/spyder-ide_5.3.3:1.0.3
             '/home/ec2-user/mount_study.sh':
               mode: '000755'
               owner: 'ec2-user'
