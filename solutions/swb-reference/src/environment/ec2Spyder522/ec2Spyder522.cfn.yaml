@@ -297,7 +297,7 @@ Resources:
                 xhost +local:all
                 # Adding sleep to wait for study mounting
                 sleep 30
-                docker run --rm -ti -v /home/ec2-user:/home/ec2-user/host --net=host -e DISPLAY=:1 -e QTWEBENGINE_DISABLE_SANDBOX=1 relevancelab/spyder-ide_5.2.2:1.0.4
+                docker run --rm -ti -v /home/ec2-user:/home/ec2-user/host --net=host -e DISPLAY=:1 -e QTWEBENGINE_DISABLE_SANDBOX=1 relevancelab/spyder-ide_5.2.2:1.0.5
             '/home/ec2-user/mount_study.sh':
               mode: '000755'
               owner: 'ec2-user'
@@ -377,7 +377,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 16
+            VolumeSize: 32
             Encrypted: true
             KmsKeyId: !Ref EncryptionKeyArn
       NetworkInterfaces:
@@ -419,7 +419,7 @@ Resources:
           sudo sh "/usr/local/bin/start-dcv-session"
 
           # Pull docker image
-          sudo docker pull relevancelab/spyder-ide_5.2.2:1.0.4
+          sudo docker pull relevancelab/spyder-ide_5.2.2:1.0.5
 
           # Run init script to create files
           /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
