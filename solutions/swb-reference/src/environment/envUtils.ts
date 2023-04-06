@@ -59,16 +59,16 @@ async function deleteRoute53Record(applicationUrl: string, secureConnectionMetad
   }
 }
 
-async function getEnvIdFromInstanceId(instanceId: string): Promise<string> {
-  const aws = new AwsService({ region: process.env.AWS_REGION!, ddbTableName: process.env.STACK_NAME! });
-  const ddbService = aws.helpers.ddb;
-  const scanner = ddbService.scan({
-    filter: 'instanceId = :val',
-    values: { ':val': `${instanceId}` }
-  });
-  const response = await scanner.execute();
-  return `${response!.Items![0].id!}`;
-}
+// async function getEnvIdFromInstanceId(instanceId: string): Promise<string> {
+//   const aws = new AwsService({ region: process.env.AWS_REGION!, ddbTableName: process.env.STACK_NAME! });
+//   const ddbService = aws.helpers.ddb;
+//   const scanner = ddbService.scan({
+//     filter: 'instanceId = :val',
+//     values: { ':val': `${instanceId}` }
+//   });
+//   const response = await scanner.execute();
+//   return `${response!.Items![0].id!}`;
+// }
 
 async function getPendingEnvironmentsCount(): Promise<number> {
   const aws = new AwsService({ region: process.env.AWS_REGION!, ddbTableName: process.env.STACK_NAME! });
@@ -139,4 +139,4 @@ async function getElbSDKForRole(params: {
   }
 }
 
-export { calculateRulePriority, createRoute53Record, deleteRoute53Record, getEnvIdFromInstanceId };
+export { calculateRulePriority, createRoute53Record, deleteRoute53Record };

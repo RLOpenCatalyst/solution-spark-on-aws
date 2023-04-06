@@ -142,7 +142,8 @@ export function setUpEnvRoutes(
 
       const context = {
         roleArn: environment.PROJ.envMgmtRoleArn,
-        externalId: environment.PROJ.externalId
+        externalId: environment.PROJ.externalId,
+        envId: req.params.id
       };
 
       if (environment.status !== 'COMPLETED') {
