@@ -30,7 +30,8 @@ export default class Workflow {
       'ec2Spyder522',
       'ec2JupyterLab',
       'ec2JupyterLab350',
-      'ec2Stata'
+      'ec2Stata',
+      'ec2VSCode'
     ];
 
     envTypes.forEach((envType) => {
