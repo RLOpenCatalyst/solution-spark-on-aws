@@ -228,6 +228,7 @@ export class SWBStack extends Stack {
             'arn:aws:iam::*:role/*-ec2-rstudio-role',
             'arn:aws:iam::*:role/*-ec2-spyder-role',
             'arn:aws:iam::*:role/*-ec2-jupyterlab-role',
+            'arn:aws:iam::*:role/*-ec2-vscode-role',
             'arn:aws:iam::*:role/*-ec2-stata-role'
           ]
         }),
@@ -245,6 +246,7 @@ export class SWBStack extends Stack {
             'arn:aws:iam::*:instance-profile/*-ec2-rstudio-profile',
             'arn:aws:iam::*:instance-profile/*-ec2-spyder-profile',
             'arn:aws:iam::*:instance-profile/*-ec2-jupyterlab-profile',
+            'arn:aws:iam::*:instance-profile/*-ec2-vscode-profile',
             'arn:aws:iam::*:instance-profile/*-ec2-stata-profile'
           ]
         }),

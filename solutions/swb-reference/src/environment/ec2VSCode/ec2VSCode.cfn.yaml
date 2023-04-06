@@ -1,0 +1,454 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Service-Workbench-on-AWS EC2-VSCode-RL Version
+Metadata:
+  PartnerName: Relevance Lab
+  PartnerURL: https://relevancelab.com
+  KnowMore: https://github.com/RLOpenCatalyst/Service_Workbench_Templates/tree/main/VS-code
+
+Parameters:
+  Namespace:
+    Type: String
+    Description: An environment name that will be prefixed to resource names
+  AmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Description: Amazon Machine Image for the EC2 instance
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+  InstanceType:
+    Type: String
+    Description: EC2 instance type to launch
+  KeyName:
+    Type: String
+    Description: Keypair name for SSH access
+  AccessFromCIDRBlock:
+    Type: String
+    Description: The CIDR used to access the ec2 instances.
+    Default: 0.0.0.0/0
+  S3Mounts:
+    Type: String
+    Description: A JSON array of objects with name, bucket, and prefix properties used to mount data
+  IamPolicyDocument:
+    Type: String
+    Description: The IAM policy to be associated with the launched workstation
+  VPC:
+    Description: The VPC in which the EC2 instance will reside
+    Type: AWS::EC2::VPC::Id
+  Subnet:
+    Description: The VPC subnet in which the EC2 instance will reside
+    Type: AWS::EC2::Subnet::Id
+  ALBSecurityGroup:
+    Description: Security Group Id of the ALB to which the EC2 instance traffic will be allowed from
+    Type: AWS::EC2::SecurityGroup::Id
+  ListenerArn:
+    Description: ARN of the alb listener in which the rules will be created
+    Type: String
+  ListenerRulePriority:
+    Description: Priority of the rule to be created
+    Type: Number
+  ApplicationUrl:
+    Description: URL of the application. This will be used as the host header to forward to target group
+    Type: String
+  EnvironmentInstanceFiles:
+    Type: String
+    Description: >-
+      An S3 URI (starting with "s3://") that specifies the location of files to be copied to
+      the environment instance, including any bootstrap scripts
+  EncryptionKeyArn:
+    Type: String
+    Description: The ARN of the KMS encryption Key used to encrypt data in the instance
+  DatasetsBucketArn:
+    Type: String
+    Description: Name of the datasets bucket in the main account
+  MainAccountId:
+    Type: String
+    Description: The Main Account ID where application is deployed
+  MainAccountRegion:
+    Type: String
+    Description: The region of application deployment in main account
+  MainAccountKeyArn:
+    Type: String
+    Description: The ARN of main account bucket encryption key
+
+Conditions:
+  IamPolicyEmpty: !Equals [!Ref IamPolicyDocument, '{}']
+
+Resources:
+  InstanceRolePermissionBoundary:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Permission boundary for EC2 instance role
+      ManagedPolicyName: !Join ['-', [Ref: Namespace, 'ec2-vscode-permission-boundary']]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:AbortMultipartUpload'
+              - 's3:ListMultipartUploadParts'
+              - 's3:PutObject'
+              - 's3:GetObjectAcl'
+              - 's3:PutObjectAcl'
+            Resource:
+              - !Join ['/', [Ref: DatasetsBucketArn, '*']]
+              - !Join [':', ['arn:aws:s3', Ref: MainAccountRegion, Ref: MainAccountId, 'accesspoint/*']]
+              - !Join [
+                  ':',
+                  ['arn:aws:s3', Ref: MainAccountRegion, Ref: MainAccountId, 'accesspoint/*/object/*']
+                ]
+          - Effect: Allow
+            Action:
+              - 's3:GetAccessPoint'
+              - 's3:ListAccessPoints'
+            Resource: '*' # These actions require wildcard resources
+          - Effect: Allow
+            Action:
+              - 's3:ListBucket'
+            Resource:
+              - !Ref DatasetsBucketArn
+              - !Join [':', ['arn:aws:s3', Ref: MainAccountRegion, Ref: MainAccountId, 'accesspoint/*']]
+          - Effect: Allow
+            Action:
+              - 's3:ListBucket'
+            Resource: !Sub
+              - 'arn:aws:s3:::${S3Bucket}'
+              - S3Bucket: !Select [2, !Split ['/', !Ref EnvironmentInstanceFiles]]
+            Condition:
+              StringLike:
+                s3:prefix: !Sub
+                  - '${S3Prefix}/*'
+                  - S3Prefix: !Select [3, !Split ['/', !Ref EnvironmentInstanceFiles]]
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+            Resource: !Sub
+              - 'arn:aws:s3:::${S3Location}/*'
+              # Remove "s3://" prefix from EnvironmentInstanceFiles
+              - S3Location: !Select [1, !Split ['s3://', !Ref EnvironmentInstanceFiles]]
+          - Effect: Allow
+            Action:
+              - 'kms:CreateGrant'
+              - 'kms:CreateKey'
+              - 'kms:DescribeKey'
+              - 'kms:EnableKeyRotation'
+              - 'kms:Encrypt'
+              - 'kms:Decrypt'
+              - 'kms:GenerateDataKey'
+              - 'kms:Get*'
+              - 'kms:List*'
+            Resource:
+              - !Ref EncryptionKeyArn
+              - !Ref MainAccountKeyArn
+          - Effect: Allow
+            Action:
+              - 'sts:AssumeRole'
+            Resource: 'arn:aws:iam::*:role/swb-*'
+          - Effect: Allow
+            Action:
+              - 'ssm:*'
+            Resource: '*'
+
+  IAMRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Join ['-', [Ref: Namespace, 'ec2-vscode-role']]
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'ec2.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - !If
+          - IamPolicyEmpty
+          - !Ref 'AWS::NoValue'
+          - PolicyName: !Join ['-', [Ref: Namespace, 's3-studydata-policy']]
+            PolicyDocument: !Ref IamPolicyDocument
+        - PolicyName: !Join ['-', [Ref: Namespace, 's3-bootstrap-script-policy']]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 's3:GetObject'
+                Resource: !Sub
+                  - 'arn:aws:s3:::${S3Location}/*'
+                  # Remove "s3://" prefix from EnvironmentInstanceFiles
+                  - S3Location: !Select [1, !Split ['s3://', !Ref EnvironmentInstanceFiles]]
+              - Effect: 'Allow'
+                Action: 's3:ListBucket'
+                Resource: !Sub
+                  - 'arn:${AWS::Partition}:s3:::${S3Bucket}'
+                  - S3Bucket: !Select [2, !Split ['/', !Ref EnvironmentInstanceFiles]]
+                Condition:
+                  StringLike:
+                    s3:prefix: !Sub
+                      - '${S3Prefix}/*'
+                      - S3Prefix: !Select [3, !Split ['/', !Ref EnvironmentInstanceFiles]]
+              - Effect: Allow
+                Action:
+                  - 'kms:CreateGrant'
+                  - 'kms:Get*'
+                  - 'kms:List*'
+                  - 'kms:Decrypt'
+                  - 'kms:DescribeKey'
+                  - 'kms:Encrypt'
+                  - 'kms:GenerateDataKey'
+                Resource:
+                  - !Ref MainAccountKeyArn
+        - PolicyName: param-store-access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'ssm:GetParameter'
+                  - 'ssm:PutParameter'
+                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+      PermissionsBoundary: !Ref InstanceRolePermissionBoundary
+
+  InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      InstanceProfileName: !Join ['-', [Ref: Namespace, 'ec2-vscode-profile']]
+      Path: '/'
+      Roles:
+        - Ref: IAMRole
+
+  SecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: EC2 Vscode workspace security group
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: !Ref AccessFromCIDRBlock
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref AccessFromCIDRBlock
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join ['-', [Ref: Namespace, 'ec2-vscode-sg']]
+        - Key: Description
+          Value: EC2 Vscode workspace security group
+      VpcId: !Ref VPC
+
+  EC2Instance:
+    Type: 'AWS::EC2::Instance'
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT10M
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - config1
+            - config2
+        config1:
+          files:
+            '/home/ec2-user/config.yaml':
+              mode: '000755'
+              owner: 'ec2-user'
+              group: 'ec2-user'
+              content: !Sub |
+                bind-addr: 127.0.0.1:8080
+                auth: none 
+                cert: false
+            '/home/ec2-user/docker-compose.yml':
+              mode: '000755'
+              owner: 'ec2-user'
+              group: 'ec2-user'
+              content: !Sub |
+                version: "3.1"
+
+                services:
+                  nginx:
+                    container_name: nginx
+                    image: nginx:latest
+                    ports:
+                      - "80:80"
+                      - "443:443"   
+                    volumes:
+                      - /etc/nginx/nginx.conf:/etc/nginx/nginx.conf
+                      - /etc/nginx/dhparam.pem:/etc/nginx/dhparam.pem
+                      - /etc/nginx/cert.key:/etc/nginx/cert.key
+                      - /etc/nginx/cert.pem:/etc/nginx/cert.pem
+                    networks:
+                      - vscode-net
+
+                  vscode:
+                    container_name: vscode
+                    image: relevancelab/vscode:1.0.0
+                    ports:
+                      - "8080:8080"      
+                    environment:
+                      - CODE_SERVER_CONFIG   
+                    volumes:
+                      - /home/ec2-user:/home/ec2-user
+                    networks:
+                      - vscode-net
+
+                networks:
+                  vscode-net:
+            '/home/ec2-user/mount_study.sh':
+              mode: '000755'
+              owner: 'ec2-user'
+              group: 'ec2-user'
+              content: !Sub |
+                #!/bin/sh
+                su - ec2-user -c "env PATH=$PATH:/usr/local/bin mount_s3.sh" 2>&1 >> /home/ec2-user/mount_s3.log
+            '/home/ec2-user/start_vscode.sh':
+              mode: '000755'
+              owner: 'ec2-user'
+              group: 'ec2-user'
+              content: !Sub |
+                #!/usr/bin/env bash
+                echo " starting vscode"
+                `CODE_SERVER_CONFIG=/home/ec2-user/code-server/config.yaml docker-compose up -d`
+            '/var/log/vscode.log':
+              content: "\n"
+              mode: '000664'
+              owner: 'ec2-user'
+              group: 'ec2-user'
+        config2:
+          commands:
+            01_mount_study:
+              cwd: '/home/ec2-user'
+              command: '/home/ec2-user/mount_study.sh'
+            02_start_vscode:
+              cwd: '/home/ec2-user'
+              command: '/home/ec2-user/start_vscode.sh'
+
+    Properties:
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      ImageId: !Ref 'AmiId'
+      KeyName: !Ref KeyName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 32
+            Encrypted: true
+            KmsKeyId: !Ref EncryptionKeyArn
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: 'true'
+          DeviceIndex: '0'
+          GroupSet:
+            - !Ref SecurityGroup
+          SubnetId: !Ref Subnet
+      Tags:
+        - Key: Name
+          Value: !Join ['-', [Ref: Namespace, 'ec2-vscode']]
+        - Key: Description
+          Value: EC2 Vscode workspace instance
+
+      UserData:
+        Fn::Base64: !Sub |
+          #!/usr/bin/env bash
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+
+          # Install docker and pull necessary containers
+          sudo yum install -y docker
+          sudo systemctl enable docker.service
+          sudo systemctl enable containerd.service
+          sudo systemctl start docker
+          sudo usermod -a -G docker ec2-user
+          sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose          
+          docker pull relevancelab/vscode:1.0.0
+          docker pull nginx
+
+          # Copy environment instance files needed for the workspace
+          aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/vscode/" "/tmp/vscode" --recursive
+          aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/create_self_signed_cert.sh" "/tmp"
+          # aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/secret.txt" "/root"
+
+          mkdir -p "/etc/nginx"
+          mv /tmp/vscode/nginx.conf /etc/nginx/nginx.conf
+
+          # Create self signed certificates
+          chmod 500 "/tmp/create_self_signed_cert.sh"
+          /tmp/create_self_signed_cert.sh         
+
+          # Add command to start vscode at reboot
+          sudo crontab -l 2>/dev/null > "/tmp/crontab"
+          echo '@reboot cd /home/ec2-user && sudo /home/ec2-user/start_vscode.sh 2>&1 >> /var/log/vscode.log' >> "/tmp/crontab"
+          echo '@reboot cd /home/ec2-user && sudo /home/ec2-user/mount_study.sh 2>&1 >> /home/ec2-user/mount_s3.log' >> "/tmp/crontab"
+          sudo crontab "/tmp/crontab"
+
+          # Mount study
+          aws s3 cp --region "${AWS::Region}" "${EnvironmentInstanceFiles}/get_bootstrap.sh" "/tmp"
+          chmod 500 "/tmp/get_bootstrap.sh"
+          /tmp/get_bootstrap.sh "${EnvironmentInstanceFiles}" '${S3Mounts}' "${AWS::Region}"          
+
+          # init command to create files from config
+          /opt/aws/bin/cfn-init --verbose --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
+
+          # Signal result to CloudFormation
+          /opt/aws/bin/cfn-signal -e $? --stack "${AWS::StackName}" --resource "EC2Instance" --region "${AWS::Region}"
+
+  EC2TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 15
+      HealthyThresholdCount: 5
+      Matcher:
+        HttpCode: '200,301,302'
+      Name: !Join ['-', [Ref: Namespace, 'tg']]
+      Port: 443
+      Protocol: HTTPS
+      Targets:
+        - Id:
+            Ref: EC2Instance
+          Port: 443
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref 'VPC'
+
+  ListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref EC2TargetGroup
+      Conditions:
+        - Field: host-header
+          Values:
+            - !Ref ApplicationUrl
+      ListenerArn: !Ref ListenerArn
+      Priority: !Ref ListenerRulePriority
+
+Outputs:
+  VSCodeInstanceArn:
+    Description: ARN of the EC2 workspace instance
+    Value: !Sub
+      - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${INSTANCE_ID}
+      - INSTANCE_ID: !Ref EC2Instance
+
+  VSCodeInstanceId:
+    Description: Instance Id for the EC2 workspace instance
+    Value: !Ref EC2Instance
+
+  VSCodeInstanceRoleArn:
+    Description: IAM role assumed by the EC2 workspace instance
+    Value: !GetAtt IAMRole.Arn

@@ -74,6 +74,11 @@ export async function handler(event: any) {
       instanceNameRecordKey: 'StataInstanceId',
       instanceArnRecordKey: 'StataInstanceArn',
       instanceRoleName: 'StataInstanceRoleArn'
+    },
+    ec2VSCode: {
+      instanceNameRecordKey: 'VSCodeInstanceId',
+      instanceArnRecordKey: 'VSCodeInstanceArn',
+      instanceRoleName: 'VSCodeInstanceRoleArn'
     }
 
     // Add your new env types here

@@ -34,6 +34,8 @@ import ec2Spyder522EnvironmentConnectionService from './environment/ec2Spyder522
 import ec2Spyder522EnvironmentLifecycleService from './environment/ec2Spyder522/ec2Spyder522EnvironmentLifecycleService';
 import ec2StataEnvironmentConnectionService from './environment/ec2Stata/ec2StataEnvironmentConnectionService';
 import ec2StataEnvironmentLifecycleService from './environment/ec2Stata/ec2StataEnvironmentLifecycleService';
+import ec2VSCodeEnvironmentConnectionService from './environment/ec2VSCode/ec2VSCodeEnvironmentConnectionService';
+import ec2VSCodeEnvironmentLifecycleService from './environment/ec2VSCode/ec2VSCodeEnvironmentLifecycleService';
 import SagemakerNotebookEnvironmentConnectionService from './environment/sagemakerNotebook/sagemakerNotebookEnvironmentConnectionService';
 import SagemakerNotebookEnvironmentLifecycleService from './environment/sagemakerNotebook/sagemakerNotebookEnvironmentLifecycleService';
 
@@ -84,6 +86,10 @@ const apiRouteConfig: ApiRouteConfig = {
     ec2Stata: {
       lifecycle: new ec2StataEnvironmentLifecycleService(),
       connection: new ec2StataEnvironmentConnectionService()
+    },
+    ec2VSCode: {
+      lifecycle: new ec2VSCodeEnvironmentLifecycleService(),
+      connection: new ec2VSCodeEnvironmentConnectionService()
     }
 
     // Add your environment types here as follows:
