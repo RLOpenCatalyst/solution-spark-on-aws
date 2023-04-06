@@ -13,7 +13,7 @@ import {
 
 import NodeRSA = require('node-rsa');
 
-import { getEnvIdFromInstanceId } from '../envUtils';
+//import { getEnvIdFromInstanceId } from '../envUtils';
 
 export default class EC2Rstudio421EnvironmentConnectionService implements EnvironmentConnectionService {
   private _envType: string = 'ec2Rstudio421';
@@ -48,7 +48,7 @@ export default class EC2Rstudio421EnvironmentConnectionService implements Enviro
     console.log(`JWT Secret - ${jwtSecret}`);
     const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
     const { partnerDomain } = secureConnectionMetadata;
-    const envId = await getEnvIdFromInstanceId(instanceId);
+    const envId = context.envId;
 
     // const authorizedUrl = `https://${this._envType}-${envId}.${partnerDomain}`;
     const rstudioSignInUrl = `https://${this._envType}-${envId}.${partnerDomain}/auth-do-sign-in`;

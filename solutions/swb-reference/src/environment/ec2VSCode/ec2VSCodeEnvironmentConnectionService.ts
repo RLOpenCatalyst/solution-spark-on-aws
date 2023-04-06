@@ -9,7 +9,7 @@ import {
   EnvironmentConnectionLinkPlaceholder
 } from '@aws/workbench-core-environments';
 
-import { getEnvIdFromInstanceId } from '../envUtils';
+//import { getEnvIdFromInstanceId } from '../envUtils';
 
 export default class EC2VSCodeEnvironmentConnectionService implements EnvironmentConnectionService {
   private _envType: string = 'ec2VSCode';
@@ -42,7 +42,7 @@ export default class EC2VSCodeEnvironmentConnectionService implements Environmen
   public async getVSCodeUrl(instanceId: string, context?: any): Promise<string> {
     const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
     const { partnerDomain } = secureConnectionMetadata;
-    const envId = await getEnvIdFromInstanceId(instanceId);
+    const envId = context.envId;
     const authorizedUrl = `https://${this._envType}-${envId}.${partnerDomain}`;
     return authorizedUrl;
   }
