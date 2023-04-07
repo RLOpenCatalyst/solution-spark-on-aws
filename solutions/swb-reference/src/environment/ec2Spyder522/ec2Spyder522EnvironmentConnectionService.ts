@@ -7,7 +7,7 @@ import {
   EnvironmentConnectionService,
   EnvironmentConnectionLinkPlaceholder
 } from '@aws/workbench-core-environments';
-import { getEnvIdFromInstanceId } from '../envUtils';
+//import { getEnvIdFromInstanceId } from '../envUtils';
 
 export default class EC2Spyder522EnvironmentConnectionService implements EnvironmentConnectionService {
   private _envType: string = 'ec2Spyder522';
@@ -40,7 +40,7 @@ export default class EC2Spyder522EnvironmentConnectionService implements Environ
   public async getSpyderUrl(instanceId: string, context?: any): Promise<string> {
     const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
     const { partnerDomain } = secureConnectionMetadata;
-    const envId = await getEnvIdFromInstanceId(instanceId);
+    const envId = context.envId;
     const authorizedUrl = `https://${this._envType}-${envId}.${partnerDomain}/?authToken=${instanceId}#swb-session`;
     console.log(`URL - ${authorizedUrl}`);
     // const region = process.env.AWS_REGION!;
