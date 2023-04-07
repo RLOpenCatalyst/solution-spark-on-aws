@@ -13,8 +13,6 @@ import {
 
 import NodeRSA = require('node-rsa');
 
-//import { getEnvIdFromInstanceId } from '../envUtils';
-
 export default class EC2RstudioEnvironmentConnectionService implements EnvironmentConnectionService {
   private _envType: string = 'ec2Rstudio';
   /**

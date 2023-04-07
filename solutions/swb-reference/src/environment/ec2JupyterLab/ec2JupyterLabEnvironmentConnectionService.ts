@@ -9,8 +9,6 @@ import {
   EnvironmentConnectionLinkPlaceholder
 } from '@aws/workbench-core-environments';
 
-//import { getEnvIdFromInstanceId } from '../envUtils';
-
 export default class EC2JupyterLabEnvironmentConnectionService implements EnvironmentConnectionService {
   private _envType: string = 'ec2JupyterLab';
   /**

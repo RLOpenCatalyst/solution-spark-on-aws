@@ -7,7 +7,6 @@ import {
   EnvironmentConnectionService,
   EnvironmentConnectionLinkPlaceholder
 } from '@aws/workbench-core-environments';
-//import { getEnvIdFromInstanceId } from '../envUtils';
 
 export default class EC2Spyder522EnvironmentConnectionService implements EnvironmentConnectionService {
   private _envType: string = 'ec2Spyder522';

@@ -59,27 +59,12 @@ async function deleteRoute53Record(applicationUrl: string, secureConnectionMetad
   }
 }
 
-// async function getEnvIdFromInstanceId(instanceId: string): Promise<string> {
-//   const aws = new AwsService({ region: process.env.AWS_REGION!, ddbTableName: process.env.STACK_NAME! });
-//   const ddbService = aws.helpers.ddb;
-//   const scanner = ddbService.scan({
-//     filter: 'instanceId = :val',
-//     values: { ':val': `${instanceId}` }
-//   });
-//   const response = await scanner.execute();
-//   return `${response!.Items![0].id!}`;
-// }
-
 async function getPendingEnvironmentsCount(): Promise<number> {
-  const aws = new AwsService({ region: process.env.AWS_REGION!, ddbTableName: process.env.STACK_NAME! });
-  const ddbService = aws.helpers.ddb;
-  const scanner = ddbService.scan({
-    filter: '#status = :val1 AND resourceType = :val2',
-    names: { '#status': 'status' },
-    values: { ':val1': `PENDING`, ':val2': 'environment' }
-  });
-  const response = await scanner.execute();
-  return response!.Items!.length;
+  const envService = new EnvironmentService({ TABLE_NAME: process.env.STACK_NAME! });
+  const user = { id: 'SYSTEM', roles: ['Admin'] };
+  const filter = { status: 'PENDING' };
+  const envDetails = await envService.listEnvironments(user, filter);
+  return envDetails!.data!.length;
 }
 
 async function changeResourceRecordSets(
