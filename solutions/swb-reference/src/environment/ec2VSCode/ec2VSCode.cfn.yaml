@@ -264,14 +264,6 @@ Resources:
             - config2
         config1:
           files:
-            '/home/ec2-user/config.yaml':
-              mode: '000755'
-              owner: 'ec2-user'
-              group: 'ec2-user'
-              content: !Sub |
-                bind-addr: 127.0.0.1:8080
-                auth: none 
-                cert: false
             '/home/ec2-user/docker-compose.yml':
               mode: '000755'
               owner: 'ec2-user'
@@ -300,7 +292,7 @@ Resources:
                     ports:
                       - "8080:8080"      
                     environment:
-                      - CODE_SERVER_CONFIG   
+                      - PASSWORD   
                     volumes:
                       - /home/ec2-user:/home/ec2-user
                     networks:
@@ -321,8 +313,14 @@ Resources:
               group: 'ec2-user'
               content: !Sub |
                 #!/usr/bin/env bash
-                echo " starting vscode"
-                `CODE_SERVER_CONFIG=/home/ec2-user/code-server/config.yaml docker-compose up -d`
+                echo "setting password and starting vscode" 
+                access_token=`uuidgen`             
+                `PASSWORD=$access_token docker-compose up -d`
+                sleep 5
+                instance_id=$(curl -s "http://169.254.169.254/latest/meta-data/instance-id")
+                instance_region=$(curl -s "http://169.254.169.254/latest/meta-data/placement/region")               
+                aws ssm put-parameter --name "/vscode/access-token/sc-environments/ec2-instance/$instance_id" --value $access_token --region $instance_region --type SecureString --overwrite 
+                echo "Stored vscode token in SSM"
             '/var/log/vscode.log':
               content: "\n"
               mode: '000664'
@@ -391,8 +389,8 @@ Resources:
 
           # Add command to start vscode at reboot
           sudo crontab -l 2>/dev/null > "/tmp/crontab"
-          echo '@reboot cd /home/ec2-user && sudo /home/ec2-user/start_vscode.sh 2>&1 >> /var/log/vscode.log' >> "/tmp/crontab"
           echo '@reboot cd /home/ec2-user && sudo /home/ec2-user/mount_study.sh 2>&1 >> /home/ec2-user/mount_s3.log' >> "/tmp/crontab"
+          echo '@reboot cd /home/ec2-user && sudo /home/ec2-user/start_vscode.sh 2>&1 >> /var/log/vscode.log' >> "/tmp/crontab"          
           sudo crontab "/tmp/crontab"
 
           # Mount study

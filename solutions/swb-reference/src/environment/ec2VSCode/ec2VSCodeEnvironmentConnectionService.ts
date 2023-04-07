@@ -3,7 +3,7 @@
  *  SPDX-License-Identifier: Apache-2.0
  */
 
-// import { AwsService } from '@aws/workbench-core-base';
+import { AwsService } from '@aws/workbench-core-base';
 import {
   EnvironmentConnectionService,
   EnvironmentConnectionLinkPlaceholder
@@ -43,7 +43,29 @@ export default class EC2VSCodeEnvironmentConnectionService implements Environmen
     const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
     const { partnerDomain } = secureConnectionMetadata;
     const envId = await getEnvIdFromInstanceId(instanceId);
-    const authorizedUrl = `https://${this._envType}-${envId}.${partnerDomain}`;
+    const accessToken = await this.getVSCodeToken(instanceId, context);
+    const authorizedUrl = `https://${this._envType}-${envId}.${partnerDomain}/login-with-password?password=${accessToken}`;
     return authorizedUrl;
+  }
+
+  /**
+   * Get VSCode access key from SSM parameter.
+   */
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  public async getVSCodeToken(instanceId: string, context?: any): Promise<string> {
+    const region = process.env.AWS_REGION!;
+    const awsService = new AwsService({ region });
+    const hostingAccountAwsService = await awsService.getAwsServiceForRole({
+      roleArn: context.roleArn,
+      roleSessionName: `VSCodeConnect-${Date.now()}`,
+      externalId: context.externalId,
+      region
+    });
+
+    const response = await hostingAccountAwsService.clients.ssm.getParameter({
+      Name: `/vscode/access-token/sc-environments/ec2-instance/${instanceId}`,
+      WithDecryption: true
+    });
+    return response.Parameter!.Value!;
   }
 }
