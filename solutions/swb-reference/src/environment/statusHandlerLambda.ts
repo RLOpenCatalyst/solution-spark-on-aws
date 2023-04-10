@@ -75,6 +75,11 @@ export async function handler(event: any) {
       instanceArnRecordKey: 'StataInstanceArn',
       instanceRoleName: 'StataInstanceRoleArn'
     },
+    ec2VSCode1710: {
+      instanceNameRecordKey: 'VSCodeInstanceId',
+      instanceArnRecordKey: 'VSCodeInstanceArn',
+      instanceRoleName: 'VSCodeInstanceRoleArn'
+    },
     ec2VSCode: {
       instanceNameRecordKey: 'VSCodeInstanceId',
       instanceArnRecordKey: 'VSCodeInstanceArn',

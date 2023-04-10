@@ -36,6 +36,8 @@ import ec2StataEnvironmentConnectionService from './environment/ec2Stata/ec2Stat
 import ec2StataEnvironmentLifecycleService from './environment/ec2Stata/ec2StataEnvironmentLifecycleService';
 import ec2VSCodeEnvironmentConnectionService from './environment/ec2VSCode/ec2VSCodeEnvironmentConnectionService';
 import ec2VSCodeEnvironmentLifecycleService from './environment/ec2VSCode/ec2VSCodeEnvironmentLifecycleService';
+import ec2VSCode1710EnvironmentConnectionService from './environment/ec2VSCode1710/ec2VSCode1710EnvironmentConnectionService';
+import ec2VSCode1710EnvironmentLifecycleService from './environment/ec2VSCode1710/ec2VSCode1710EnvironmentLifecycleService';
 import SagemakerNotebookEnvironmentConnectionService from './environment/sagemakerNotebook/sagemakerNotebookEnvironmentConnectionService';
 import SagemakerNotebookEnvironmentLifecycleService from './environment/sagemakerNotebook/sagemakerNotebookEnvironmentLifecycleService';
 
@@ -86,6 +88,10 @@ const apiRouteConfig: ApiRouteConfig = {
     ec2Stata: {
       lifecycle: new ec2StataEnvironmentLifecycleService(),
       connection: new ec2StataEnvironmentConnectionService()
+    },
+    ec2VSCode1710: {
+      lifecycle: new ec2VSCode1710EnvironmentLifecycleService(),
+      connection: new ec2VSCode1710EnvironmentConnectionService()
     },
     ec2VSCode: {
       lifecycle: new ec2VSCodeEnvironmentLifecycleService(),
