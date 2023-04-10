@@ -288,7 +288,7 @@ Resources:
 
                   vscode:
                     container_name: vscode
-                    image: relevancelab/vscode:1.0.0
+                    image: relevancelab/vscode_1.72.1:1.0.0
                     ports:
                       - "8080:8080"      
                     environment:
@@ -372,7 +372,7 @@ Resources:
           sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose          
-          docker pull relevancelab/vscode:1.0.0
+          docker pull relevancelab/vscode_1.72.1:1.0.0
           docker pull nginx
 
           # Copy environment instance files needed for the workspace
