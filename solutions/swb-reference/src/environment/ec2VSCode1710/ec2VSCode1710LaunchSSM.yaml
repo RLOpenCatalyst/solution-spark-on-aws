@@ -164,7 +164,7 @@ mainSteps:
     nextStep: WaitForProvisioning
   - name: WaitForProvisioning
     action: 'aws:waitForAwsResourceProperty'
-    timeoutSeconds: 600
+    timeoutSeconds: 1200
     inputs:
       Service: servicecatalog
       Api: DescribeProvisionedProduct
