@@ -206,7 +206,7 @@ mainSteps:
       Service: events
       Api: PutEvents
       Entries:
-        - Detail: '{ "EnvId": "{{ EnvId }}", "ProvisionedProductId": "{{ Launch.ProvisionedProductId }}", "RecordId": "{{ Launch.RecordId }}", "EnvType": "ec2VSCode", "Operation": "Launch", "Status": "COMPLETED" }'
+        - Detail: '{ "EnvId": "{{ EnvId }}", "ProvisionedProductId": "{{ Launch.ProvisionedProductId }}", "RecordId": "{{ Launch.RecordId }}", "EnvType": "ec2VSCode1710", "Operation": "Launch", "Status": "COMPLETED" }'
           DetailType: 'Launch'
           EventBusName: 'default'
           Source: 'automation' # This is being used for updating env in statusHandler lambda
@@ -217,7 +217,7 @@ mainSteps:
       Service: events
       Api: PutEvents
       Entries:
-        - Detail: '{ "EnvId": "{{ EnvId }}", "ProvisionedProductId": "{{ Launch.ProvisionedProductId }}", "RecordId": "{{ Launch.RecordId }}", "EnvType": "ec2VSCode", "Operation": "Launch", "Status": "FAILED", "ErrorMessage": "{{ GetProvisionedProductDetail.ErrorMessage }}" }'
+        - Detail: '{ "EnvId": "{{ EnvId }}", "ProvisionedProductId": "{{ Launch.ProvisionedProductId }}", "RecordId": "{{ Launch.RecordId }}", "EnvType": "ec2VSCode1710", "Operation": "Launch", "Status": "FAILED", "ErrorMessage": "{{ GetProvisionedProductDetail.ErrorMessage }}" }'
           DetailType: 'Launch'
           EventBusName: 'default'
           Source: 'automation' # This is being used for updating env in statusHandler lambda

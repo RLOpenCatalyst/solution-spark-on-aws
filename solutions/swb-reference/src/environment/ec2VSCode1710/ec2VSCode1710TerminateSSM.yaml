@@ -72,7 +72,7 @@ mainSteps:
       Service: events
       Api: PutEvents
       Entries:
-        - Detail: '{ "EnvId": "{{ EnvId }}", "ProvisionedProductId": "{{ ProvisionedProductId }}", "RecordId": "{{ Terminate.RecordId }}", "EnvType": "ec2VSCode", "Operation": "Terminate", "Status": "TERMINATED" }'
+        - Detail: '{ "EnvId": "{{ EnvId }}", "ProvisionedProductId": "{{ ProvisionedProductId }}", "RecordId": "{{ Terminate.RecordId }}", "EnvType": "ec2VSCode1710", "Operation": "Terminate", "Status": "TERMINATED" }'
           DetailType: 'Terminate'
           EventBusName: 'default'
           Source: 'automation' # This is being used for updating env in statusHandler lambda
@@ -83,7 +83,7 @@ mainSteps:
       Service: events
       Api: PutEvents
       Entries:
-        - Detail: '{ "EnvId": "{{ EnvId }}", "ProvisionedProductId": "{{ ProvisionedProductId }}", "RecordId": "{{ Terminate.RecordId }}", "EnvType": "ec2VSCode", "Operation": "Terminate", "Status": "TERMINATING_FAILED", "ErrorMessage": {{ GetRecordDetail.ErrorMessage }} }'
+        - Detail: '{ "EnvId": "{{ EnvId }}", "ProvisionedProductId": "{{ ProvisionedProductId }}", "RecordId": "{{ Terminate.RecordId }}", "EnvType": "ec2VSCode1710", "Operation": "Terminate", "Status": "TERMINATING_FAILED", "ErrorMessage": {{ GetRecordDetail.ErrorMessage }} }'
           DetailType: 'Terminate'
           EventBusName: 'default'
           Source: 'automation' # This is being used for updating env in statusHandler lambda
