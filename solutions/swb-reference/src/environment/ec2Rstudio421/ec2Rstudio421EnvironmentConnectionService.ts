@@ -51,7 +51,7 @@ export default class EC2Rstudio421EnvironmentConnectionService implements Enviro
     // const authorizedUrl = `https://${this._envType}-${envId}.${partnerDomain}`;
     const rstudioSignInUrl = `https://${this._envType}-${envId}.${partnerDomain}/auth-do-sign-in`;
     const hash = crypto.createHash('sha256');
-    const username = 'rstudio-user';
+    const username = 'ec2-user';
     const password = hash.update(`${instanceId}${jwtSecret}`).digest('hex');
     const credentials = `${username}\n${password}`;
     const publicKey = await this.getRstudioPublicKey(instanceId, context);

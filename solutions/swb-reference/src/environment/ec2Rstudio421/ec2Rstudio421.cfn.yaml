@@ -286,13 +286,13 @@ Resources:
                       - rstudio-net
 
                   rstudio: 
-                    image: relevancelab/rstudio_4.2.1:1.0.2
+                    image: relevancelab/rstudio_4.2.1:1.0.3
                     ports:
                       - "8787:8787"      
                     environment:
                       - PASSWORD    
                     volumes:
-                      - /home/ec2-user:/home/rstudio-user
+                      - /home/ec2-user:/home/ec2-user
                     networks:
                       - rstudio-net
 
@@ -315,7 +315,7 @@ Resources:
                 #!/usr/bin/env bash
                 instance_id=$(curl -s "http://169.254.169.254/latest/meta-data/instance-id")
                 secret=$(cat "/root/secret.txt")
-                echo "setting rstudio-user password and starting rstudio"
+                echo "setting ec2-user password and starting rstudio"
                 password=$(echo -n "$instance_id$secret" | sha256sum | awk '{print $1}')
                 `PASSWORD=$password docker-compose up -d`                              
                 sleep 10
@@ -373,7 +373,7 @@ Resources:
           sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose          
-          docker pull relevancelab/rstudio_4.2.1:1.0.2
+          docker pull relevancelab/rstudio_4.2.1:1.0.3
           docker pull nginx
 
           # Copy environment instance files needed for the workspace
