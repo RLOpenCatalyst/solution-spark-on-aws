@@ -59,6 +59,28 @@ async function deleteRoute53Record(applicationUrl: string, secureConnectionMetad
   }
 }
 
+async function deleteSSMParameter(envId: string, paramName: string): Promise<void> {
+  try {
+    const envService = new EnvironmentService({ TABLE_NAME: process.env.STACK_NAME! });
+    // Get value from env in DDB
+    const envDetails = await envService.getEnvironment(envId, true);
+    const region = process.env.AWS_REGION!;
+    const awsService = new AwsService({ region });
+    const hostingAccountAwsService = await awsService.getAwsServiceForRole({
+      roleArn: envDetails.PROJ.envMgmtRoleArn,
+      roleSessionName: `Delete-SSM-Parameter-${Date.now()}`,
+      externalId: envDetails.PROJ.externalId,
+      region
+    });
+    await hostingAccountAwsService.clients.ssm.deleteParameter({
+      Name: paramName
+    });
+    console.log('Deleted SSM parameter');
+  } catch (error) {
+    console.error('An error occurred while deleting SSM parameter : ', error.message);
+  }
+}
+
 async function getPendingEnvironmentsCount(): Promise<number> {
   const envService = new EnvironmentService({ TABLE_NAME: process.env.STACK_NAME! });
   const user = { id: 'SYSTEM', roles: ['Admin'] };
@@ -124,4 +146,4 @@ async function getElbSDKForRole(params: {
   }
 }
 
-export { calculateRulePriority, createRoute53Record, deleteRoute53Record };
+export { calculateRulePriority, createRoute53Record, deleteRoute53Record, deleteSSMParameter };

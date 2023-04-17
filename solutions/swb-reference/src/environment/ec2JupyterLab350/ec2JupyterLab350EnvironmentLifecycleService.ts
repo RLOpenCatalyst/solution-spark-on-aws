@@ -12,7 +12,12 @@ import {
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
-import { calculateRulePriority, createRoute53Record, deleteRoute53Record } from '../envUtils';
+import {
+  calculateRulePriority,
+  createRoute53Record,
+  deleteRoute53Record,
+  deleteSSMParameter
+} from '../envUtils';
 
 export default class EC2JupyterLab350EnvironmentLifecycleService implements EnvironmentLifecycleService {
   public helper: EnvironmentLifecycleHelper;
@@ -92,6 +97,9 @@ export default class EC2JupyterLab350EnvironmentLifecycleService implements Envi
     const { partnerDomain } = secureConnectionMetadata;
     const applicationUrl = `${this._envType}-${envId}.${partnerDomain}`;
     await deleteRoute53Record(applicationUrl, secureConnectionMetadata);
+    const instanceId = envDetails.instanceId!;
+    const ssmParamName = `/jupyterlab/access-token/sc-environments/ec2-instance/${instanceId}`;
+    await deleteSSMParameter(envId, ssmParamName);
     const ssmParameters = {
       ProvisionedProductId: [provisionedProductId],
       TerminateToken: [uuidv4()],
