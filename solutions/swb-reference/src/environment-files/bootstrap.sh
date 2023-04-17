@@ -74,9 +74,13 @@ case "$(env_type)" in
         sudo mv "${FILES_DIR}/offline-packages/jq-1.5-linux64" "/usr/local/bin/jq"
         chmod +x "/usr/local/bin/jq"
         echo "Finish installing jq"
-        echo "Copying Goofys from bootstrap.sh"
-        cp "${FILES_DIR}/offline-packages/goofys" /usr/local/bin/goofys
-        chmod +x "/usr/local/bin/goofys"
+        # echo "Copying Goofys from bootstrap.sh"
+        # cp "${FILES_DIR}/offline-packages/goofys" /usr/local/bin/goofys
+        # chmod +x "/usr/local/bin/goofys"
+        echo "Installing S3FS"
+        sudo amazon-linux-extras install -y epel
+        sudo yum install -y s3fs-fuse
+        echo "Installed S3FS"
         ;;
     "ec2-dcv")
         echo "Installing JQ"

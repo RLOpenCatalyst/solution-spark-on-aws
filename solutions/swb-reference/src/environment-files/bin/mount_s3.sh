@@ -47,6 +47,7 @@ append_role_to_credentials() {
 # if it exists. Refer https://docs.aws.amazon.com/sdkref/latest/guide/setting-global-sts_regional_endpoints.html
 token=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"`
 region=`curl http://169.254.169.254/latest/meta-data/placement/availability-zone/ -H "X-aws-ec2-metadata-token: $token" | sed 's/.$//'`
+# iam_role=$(curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ | cut -d'"' -f2)
 export AWS_STS_REGIONAL_ENDPOINTS=regional
 export AWS_DEFAULT_REGION=$region
 export AWS_SDK_LOAD_CONFIG=1
@@ -72,7 +73,12 @@ do
         if [ "$s3_role_arn" == "null" ]
         then
             printf 'Mounting internal study "%s" at "%s"\n' "$study_id" "$study_dir"
-            goofys --region $region --acl "bucket-owner-full-control" "${s3_bucket}:${s3_prefix}" "$study_dir"
+            # goofys --region $region --acl "bucket-owner-full-control" "${s3_bucket}:${s3_prefix}" "$study_dir"
+            # sleep 20
+            s3fs -o iam_role="auto" -o dbglevel="info" -o curldbg -o endpoint=$region -o default_acl="bucket-owner-full-control" "${s3_bucket}:/${s3_prefix}" "$study_dir"
+            # mkdir -p "/home/ec2-user/studies/Pop"
+            # sudo bash -c "echo '017a37c6-4da5-mounte-fpzun6h89acmyychr1pmkosizoxenuse1b-s3alias:/datasets/Population\040Census /home/ec2-user/studies/Pop fuse.s3fs _netdev,allow_other,iam_role=auto,dbglevel=info 0 0' >> /etc/fstab"
+            # sudo mount -a
         else
             bucket_region="$(printf "%s" "$mounts" | jq -r ".[$study_idx].region" -)"
             # BYOB studies have a region specified, but in case it isn't use the default region

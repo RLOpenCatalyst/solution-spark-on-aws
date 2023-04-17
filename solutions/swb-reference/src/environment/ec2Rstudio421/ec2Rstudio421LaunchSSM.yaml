@@ -193,13 +193,35 @@ mainSteps:
     action: 'aws:branch'
     inputs:
       Choices:
-        - NextStep: PushMetadataToEventBridge
+        - NextStep: GetRecordDetails
           Variable: '{{ GetProvisionedProductDetail.ProductStatus }}'
           StringEquals: AVAILABLE
         - NextStep: PushFailureStatusToEventBridge
           Variable: '{{ GetProvisionedProductDetail.ProductStatus }}'
           StringEquals: ERROR
       Default: PushFailureStatusToEventBridge
+  - name: GetRecordDetails
+    action: 'aws:executeAwsApi'
+    inputs:
+      Service: servicecatalog
+      Api: DescribeRecord
+      Id: '{{ Launch.RecordId }}'
+    outputs:
+      - Name: InstanceId
+        Type: String
+        Selector: '$.RecordOutputs[2].OutputValue'
+    nextStep: RunBootStrapScripts
+  - name: RunBootStrapScripts
+    action: 'aws:runCommand'
+    inputs:
+      DocumentName: 'AWS-RunShellScript'
+      InstanceIds:
+        - '{{ GetRecordDetails.InstanceId }}'
+      Parameters:
+        commands:
+          - 'su - ec2-user -c "env PATH=$PATH:/usr/local/bin mount_s3.sh" 2>&1 >> /home/ec2-user/mount_s3.log'
+          - 'cd /home/ec2-user && bash /home/ec2-user/start_rstudio.sh'
+    nextStep: PushMetadataToEventBridge
   - name: PushMetadataToEventBridge
     action: 'aws:executeAwsApi'
     inputs:

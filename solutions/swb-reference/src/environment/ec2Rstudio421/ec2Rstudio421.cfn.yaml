@@ -143,9 +143,12 @@ Resources:
             Action:
               - 'sts:AssumeRole'
             Resource: 'arn:aws:iam::*:role/swb-*'
+          # Permission for SSM document to execute commands in the instance
           - Effect: Allow
             Action:
               - 'ssm:*'
+              - 'ssmmessages:*'
+              - 'ec2messages:*'
             Resource: '*'
 
   IAMRole:
@@ -162,6 +165,8 @@ Resources:
                 - 'ec2.amazonaws.com'
             Action:
               - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
         - !If
           - IamPolicyEmpty
@@ -261,7 +266,6 @@ Resources:
         configSets:
           default:
             - config1
-            - config2
         config1:
           files:
             '/home/ec2-user/docker-compose.yml':
@@ -305,7 +309,7 @@ Resources:
               content: !Sub |
                 #!/bin/sh
                 # Adding sleep to avoid mounting failure
-                sleep 60
+                # sleep 60
                 su - ec2-user -c "env PATH=$PATH:/usr/local/bin mount_s3.sh" 2>&1 >> /home/ec2-user/mount_s3.log
             '/home/ec2-user/start_rstudio.sh':
               mode: '000755'
@@ -328,14 +332,7 @@ Resources:
               mode: '000664'
               owner: 'ec2-user'
               group: 'ec2-user'
-        config2:
-          commands:
-            01_mount_study:
-              cwd: '/home/ec2-user'
-              command: '/home/ec2-user/mount_study.sh'
-            02_start_rstudio:
-              cwd: '/home/ec2-user'
-              command: '/home/ec2-user/start_rstudio.sh'
+
     Properties:
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref InstanceProfile
