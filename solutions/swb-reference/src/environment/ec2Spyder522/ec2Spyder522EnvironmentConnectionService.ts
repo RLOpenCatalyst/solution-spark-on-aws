@@ -3,6 +3,7 @@
  *  SPDX-License-Identifier: Apache-2.0
  */
 
+import { AwsService } from '@aws/workbench-core-base';
 import {
   EnvironmentConnectionService,
   EnvironmentConnectionLinkPlaceholder
@@ -40,7 +41,9 @@ export default class EC2Spyder522EnvironmentConnectionService implements Environ
     const secureConnectionMetadata = JSON.parse(process.env.SECURE_CONNECTION_METADATA!);
     const { partnerDomain } = secureConnectionMetadata;
     const envId = context.envId;
-    const authorizedUrl = `https://${this._envType}-${envId}.${partnerDomain}/?authToken=${instanceId}#swb-session`;
+    const data = await this.getSpyderToken(instanceId, context);
+    const { auth_token, session_id } = JSON.parse(data);
+    const authorizedUrl = `https://${this._envType}-${envId}.${partnerDomain}/?authToken=${auth_token}#${session_id}`;
     console.log(`URL - ${authorizedUrl}`);
     // const region = process.env.AWS_REGION!;
     // const awsService = new AwsService({ region });
@@ -56,5 +59,26 @@ export default class EC2Spyder522EnvironmentConnectionService implements Environ
     // const instanceDns = response.Reservations![0].Instances![0].PublicDnsName!;
     // const authorizedUrl = `https://${instanceDns}:8443/?authToken=${instanceId}#swb-session`;
     return authorizedUrl;
+  }
+
+  /**
+   * Get VSCode access key from SSM parameter.
+   */
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  public async getSpyderToken(instanceId: string, context?: any): Promise<string> {
+    const region = process.env.AWS_REGION!;
+    const awsService = new AwsService({ region });
+    const hostingAccountAwsService = await awsService.getAwsServiceForRole({
+      roleArn: context.roleArn,
+      roleSessionName: `VSCodeConnect-${Date.now()}`,
+      externalId: context.externalId,
+      region
+    });
+
+    const response = await hostingAccountAwsService.clients.ssm.getParameter({
+      Name: `/spyder/access-token/sc-environments/ec2-instance/${instanceId}`,
+      WithDecryption: true
+    });
+    return response.Parameter!.Value!;
   }
 }
