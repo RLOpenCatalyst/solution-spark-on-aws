@@ -386,7 +386,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 16
+            VolumeSize: 32
             Encrypted: true
             KmsKeyId: !Ref EncryptionKeyArn
       NetworkInterfaces:
