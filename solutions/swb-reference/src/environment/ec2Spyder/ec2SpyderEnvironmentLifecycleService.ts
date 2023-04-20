@@ -12,7 +12,12 @@ import {
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
-import { calculateRulePriority, createRoute53Record, deleteRoute53Record } from '../envUtils';
+import {
+  calculateRulePriority,
+  createRoute53Record,
+  deleteRoute53Record,
+  deleteSSMParameter
+} from '../envUtils';
 
 export default class Ec2SpyderEnvironmentLifecycleService implements EnvironmentLifecycleService {
   public helper: EnvironmentLifecycleHelper;
@@ -92,6 +97,10 @@ export default class Ec2SpyderEnvironmentLifecycleService implements Environment
     const { partnerDomain } = secureConnectionMetadata;
     const applicationUrl = `${this._envType}-${envId}.${partnerDomain}`;
     await deleteRoute53Record(applicationUrl, secureConnectionMetadata);
+
+    const instanceId = envDetails.instanceId!;
+    const ssmParamName = `/spyder/access-token/sc-environments/ec2-instance/${instanceId}`;
+    await deleteSSMParameter(envId, ssmParamName);
 
     const ssmParameters = {
       ProvisionedProductId: [provisionedProductId],

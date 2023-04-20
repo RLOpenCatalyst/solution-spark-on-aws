@@ -309,9 +309,12 @@ Resources:
             '/home/ec2-user/set_user_token.sh':
               content: !Sub |
                 #!/bin/bash
-                sudo mkdir -p /var/run/dcvsimpleextauth
+                region=$(curl -s "http://169.254.169.254/latest/meta-data/placement/region")
                 instance_id=$(curl -s "http://169.254.169.254/latest/meta-data/instance-id")
-                echo $instance_id | sudo dcvsimpleextauth add-user --user ec2-user --session swb-session
+                session_id="swb-session"
+                auth_token=`uuidgen`
+                parameter_name="/spyder/access-token/sc-environments/ec2-instance/$instance_id"
+                aws ssm put-parameter --name "$parameter_name" --type "String" --value '{"auth_token":"'$auth_token'","session_id":"'$session_id'"}' --region $region --overwrite
                 echo "User token set successfully"
               mode: '000755'
               owner: 'ec2-user'
@@ -341,12 +344,17 @@ Resources:
                 serverurl=unix:///home/ec2-user/supervisor/supervisor.sock ; use a unix:// URL  for a unix socket
 
                 [program:dcv-simple-ext-auth]
-                command=sudo dcvsimpleextauth start-server  ; the program (relative uses PATH, can take args)
-                directory=/home/ec2-user                                                                     ; directory to cwd to before exec (def no cwd)
-                user=ec2-user                                                                                ; setuid to this UNIX account to run the program
-                redirect_stderr=true                                                                         ; redirect proc stderr to stdout (default false)
-                stdout_logfile=/home/ec2-user/supervisor/dcv-simple-ext-auth.log
+                command=docker run -p 8445:8445 -e PORT=8445 -e PARAMNAMEPREFIX=/spyder/access-token/sc-environments/ec2-instance/ relevancelab/nice-dcv-auth-svc:1.0.0  ; the program (relative uses PATH, can take args)
+                directory=/home/ec2-user                                                                                                                                 ; directory to cwd to before exec (def no cwd)
+                user=ec2-user                                                                                                                                            ; setuid to this UNIX account to run the program
+                redirect_stderr=true                                                                                                                                     ; redirect proc stderr to stdout (default false)
+                stdout_logfile=/home/ec2-user/supervisor/cust_auth.log
             '/home/ec2-user/supervisor/supervisord.log':
+              content: "\n"
+              mode: '000664'
+              owner: 'ec2-user'
+              group: 'ec2-user'
+            '/home/ec2-user/supervisor/cust_auth.log':
               content: "\n"
               mode: '000664'
               owner: 'ec2-user'
@@ -366,7 +374,7 @@ Resources:
               command: 'sudo /usr/local/bin/supervisord'
             02_set_user_token:
               cwd: '/home/ec2-user'
-              command: 'sudo -u ec2-user /home/ec2-user/set_user_token.sh'
+              command: '/home/ec2-user/set_user_token.sh'
             03_create_application_desktop:
               cwd: '/home/ec2-user'
               command: 'sudo -u ec2-user cp /home/ec2-user/.config/autostart/spyder.desktop /home/ec2-user/Desktop'
@@ -402,7 +410,7 @@ Resources:
           sudo pip3 install supervisor crudini
 
           # Route auth request to external authenticator and restart dcv
-          sudo /usr/local/bin/crudini --set /etc/dcv/dcv.conf security auth-token-verifier \"http://127.0.0.1:8444\"
+          sudo /usr/local/bin/crudini --set /etc/dcv/dcv.conf security auth-token-verifier \"http://127.0.0.1:8445\"
           sudo systemctl restart dcvserver
 
           # Set password for ec2-user
@@ -420,6 +428,7 @@ Resources:
           sudo sh "/usr/local/bin/start-dcv-session"
 
           # Pull docker image
+          docker pull relevancelab/nice-dcv-auth-svc:1.0.0
           sudo docker pull relevancelab/spyder-ide_5.2.2:1.0.5
 
           # Run init script to create files
