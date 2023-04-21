@@ -297,7 +297,7 @@ Resources:
                 xhost +local:all
                 rm "$HOME/.config/spyder-py3/spyder.lock"
                 # Adding sleep to wait for study mounting
-                sleep 30
+                sleep 10
                 docker run --rm -ti -v /home/ec2-user:/home/ec2-user --net=host -e DISPLAY=:1 -e QTWEBENGINE_DISABLE_SANDBOX=1 relevancelab/spyder-ide_5.3.3:1.0.4
             '/home/ec2-user/mount_study.sh':
               mode: '000755'
