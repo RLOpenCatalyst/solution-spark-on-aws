@@ -414,6 +414,7 @@ export class SWBStack extends Stack {
     const s3Bucket = new Bucket(this, 's3-access-logs', {
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
       objectOwnership: ObjectOwnership.OBJECT_WRITER,
+      versioned: true,
       encryption: BucketEncryption.S3_MANAGED
     });
 
@@ -506,7 +507,9 @@ export class SWBStack extends Stack {
       serverAccessLogsBucket: this._accessLogsBucket,
       serverAccessLogsPrefix: this._s3AccessLogsPrefix,
       encryption: BucketEncryption.KMS,
-      encryptionKey: mainAcctEncryptionKey
+      encryptionKey: mainAcctEncryptionKey,
+      versioned: true,
+      objectOwnership: ObjectOwnership.OBJECT_WRITER
     });
     this._addS3TLSSigV4BucketPolicy(s3Bucket);
 
