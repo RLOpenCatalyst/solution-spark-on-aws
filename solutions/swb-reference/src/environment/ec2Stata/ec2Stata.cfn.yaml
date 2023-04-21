@@ -296,7 +296,7 @@ Resources:
                 set -x
                 xhost +local:all
                 # Adding sleep to wait for study mounting
-                sleep 20 
+                sleep 10
                 docker run -d --net=host -v /home/ec2-user/stata.lic:/usr/local/stata/stata.lic -v /home/ec2-user:/home/ec2-user -e DISPLAY=:1 relevancelab/stata:1.1.0
 
             '/home/ec2-user/mount_study.sh':

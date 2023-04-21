@@ -72,7 +72,7 @@ export default class EnvironmentLifecycleHelper {
         ProductId: payload.envMetadata.ETC.productId
       });
       updatedPayload.ssmParameters.PathId = [listLaunchPathResponse.LaunchPathSummaries![0]!.Id!];
-      console.log('SSM Parameters - ' + JSON.stringify(updatedPayload.ssmParameters))
+      console.log('SSM Parameters - ' + JSON.stringify(updatedPayload.ssmParameters));
       await this.executeSSMDocument(updatedPayload);
     } catch (e) {
       console.log(e);
@@ -180,6 +180,9 @@ export default class EnvironmentLifecycleHelper {
 
     const envId = envMetadata.id!;
     const endpointsCreated: { [key: string]: string }[] = [];
+    // TBD: Adding as a temporary fix to overcome accespoint permission issue.
+    const { datasetsBucketArn } = await this.getCfnOutputs();
+    const datasetsBucketName = datasetsBucketArn.split(':').pop() as string;
 
     const datasetsToMount = await Promise.all(
       _.map(datasetIds, async (datasetId) => {
@@ -212,7 +215,7 @@ export default class EnvironmentLifecycleHelper {
 
         return JSON.stringify({
           name: mountObject.name,
-          bucket: mountObject.bucket,
+          bucket: datasetsBucketName, // TBD: Adding as a temporary fix to overcome accespoint permission issue.
           prefix: mountObject.prefix
         });
       })

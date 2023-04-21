@@ -143,12 +143,9 @@ Resources:
             Action:
               - 'sts:AssumeRole'
             Resource: 'arn:aws:iam::*:role/swb-*'
-          # Permission for SSM document to execute commands in the instance
           - Effect: Allow
             Action:
               - 'ssm:*'
-              - 'ssmmessages:*'
-              - 'ec2messages:*'
             Resource: '*'
 
   IAMRole:
@@ -165,8 +162,6 @@ Resources:
                 - 'ec2.amazonaws.com'
             Action:
               - 'sts:AssumeRole'
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
         - !If
           - IamPolicyEmpty
@@ -266,6 +261,7 @@ Resources:
         configSets:
           default:
             - config1
+            - config2
         config1:
           files:
             '/home/ec2-user/docker-compose.yml':
@@ -332,7 +328,14 @@ Resources:
               mode: '000664'
               owner: 'ec2-user'
               group: 'ec2-user'
-
+        config2:
+          commands:
+            01_mount_study:
+              cwd: '/home/ec2-user'
+              command: '/home/ec2-user/mount_study.sh'
+            02_start_rstudio:
+              cwd: '/home/ec2-user'
+              command: '/home/ec2-user/start_rstudio.sh'
     Properties:
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref InstanceProfile
@@ -387,6 +390,7 @@ Resources:
 
           # Add command to start rstudio at reboot
           sudo crontab -l 2>/dev/null > "/tmp/crontab"
+          echo '@reboot su - ec2-user -c "env PATH=$PATH:/usr/local/bin mount_s3.sh" 2>&1 >> /home/ec2-user/mount_s3.log' >> "/tmp/crontab"
           echo '@reboot cd /home/ec2-user && sudo /home/ec2-user/start_rstudio.sh 2>&1 >> /var/log/rstudio.log' >> "/tmp/crontab"
           sudo crontab "/tmp/crontab"
 

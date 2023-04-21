@@ -82,18 +82,6 @@ case "$(env_type)" in
         sudo yum install -y s3fs-fuse
         echo "Installed S3FS"
         ;;
-    "ec2-dcv")
-        echo "Installing JQ"
-        # sudo mv "${FILES_DIR}/offline-packages/jq-1.5-linux64" "/usr/local/bin/jq"
-        # chmod +x "/usr/local/bin/jq"
-        # echo "Finish installing jq"
-        ;;
-    "rstudio")
-        echo "Installing JQ"
-        #sudo mv "${FILES_DIR}/offline-packages/jq-1.5-linux64" "/usr/local/bin/jq"
-        #chmod +x "/usr/local/bin/jq"
-        #echo "Finish installing jq"
-        ;;
 esac
 
 # echo "Copying Goofys from bootstrap.sh"
@@ -135,24 +123,6 @@ case "$(env_type)" in
         else
             initctl restart jupyter-server --no-wait
         fi
-        ;;
-    "rstudio") # Add mount script to bash profile
-        echo "Installing fuse for AL2"
-        #cd "${FILES_DIR}/offline-packages/sagemaker/fuse-2.9.4_AL2"
-        #sudo yum --disablerepo=* localinstall -y *.rpm
-        #echo "Finish installing fuse"
-        sudo crontab -l 2>/dev/null > "/tmp/crontab"
-        sed -i '1s|^|@reboot su - ec2-user -c "env PATH=$PATH:/usr/local/bin mount_s3.sh" 2>&1 >> /home/ec2-user/mount_s3.log\n|' /tmp/crontab
-        sudo crontab "/tmp/crontab"
-        ;;
-    "jupyterlab") # Add mount script to bash profile
-        echo "Installing fuse for AL2"
-        #cd "${FILES_DIR}/offline-packages/sagemaker/fuse-2.9.4_AL2"
-        #sudo yum --disablerepo=* localinstall -y *.rpm
-        #echo "Finish installing fuse"
-        sudo crontab -l 2>/dev/null > "/tmp/crontab"
-        sed -i '1s|^|@reboot su - ec2-user -c "env PATH=$PATH:/usr/local/bin mount_s3.sh" 2>&1 >> /home/ec2-user/mount_s3.log\n|' /tmp/crontab
-        sudo crontab "/tmp/crontab"
         ;;
 esac
 

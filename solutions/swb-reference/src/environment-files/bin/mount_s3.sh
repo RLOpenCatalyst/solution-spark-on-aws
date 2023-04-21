@@ -74,11 +74,7 @@ do
         then
             printf 'Mounting internal study "%s" at "%s"\n' "$study_id" "$study_dir"
             # goofys --region $region --acl "bucket-owner-full-control" "${s3_bucket}:${s3_prefix}" "$study_dir"
-            # sleep 20
-            s3fs -o iam_role="auto" -o dbglevel="info" -o curldbg -o endpoint=$region -o default_acl="bucket-owner-full-control" "${s3_bucket}:/${s3_prefix}" "$study_dir"
-            # mkdir -p "/home/ec2-user/studies/Pop"
-            # sudo bash -c "echo '017a37c6-4da5-mounte-fpzun6h89acmyychr1pmkosizoxenuse1b-s3alias:/datasets/Population\040Census /home/ec2-user/studies/Pop fuse.s3fs _netdev,allow_other,iam_role=auto,dbglevel=info 0 0' >> /etc/fstab"
-            # sudo mount -a
+            s3fs -o iam_role="auto" -o dbglevel="info" -o endpoint=$region -o default_acl="bucket-owner-full-control" "${s3_bucket}:/${s3_prefix}" "$study_dir"
         else
             bucket_region="$(printf "%s" "$mounts" | jq -r ".[$study_idx].region" -)"
             # BYOB studies have a region specified, but in case it isn't use the default region
