@@ -42,7 +42,7 @@ parameters:
   ContainerName:
     type: String
     description: Docker image of the application to be launched
-    allowedPattern: ^[a-zA-Z0-9_\-.]{1,100}$
+    allowedPattern: ^[a-zA-Z0-9_\-.\/:]{1,150}$
   KeyName:
     type: String
     description: '(Required) Keypair name for SSH access'
