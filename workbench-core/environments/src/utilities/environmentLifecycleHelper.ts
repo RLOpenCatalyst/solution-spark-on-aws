@@ -72,7 +72,7 @@ export default class EnvironmentLifecycleHelper {
         ProductId: payload.envMetadata.ETC.productId
       });
       updatedPayload.ssmParameters.PathId = [listLaunchPathResponse.LaunchPathSummaries![0]!.Id!];
-      console.log('SSM Parameters - ' + JSON.stringify(updatedPayload.ssmParameters))
+      console.log('SSM Parameters - ' + JSON.stringify(updatedPayload.ssmParameters));
       await this.executeSSMDocument(updatedPayload);
     } catch (e) {
       console.log(e);
@@ -180,6 +180,9 @@ export default class EnvironmentLifecycleHelper {
 
     const envId = envMetadata.id!;
     const endpointsCreated: { [key: string]: string }[] = [];
+    // TBD: Adding as a temporary fix to overcome accespoint permission issue.
+    const { datasetsBucketArn } = await this.getCfnOutputs();
+    const datasetsBucketName = datasetsBucketArn.split(':').pop() as string;
 
     const datasetsToMount = await Promise.all(
       _.map(datasetIds, async (datasetId) => {
@@ -212,7 +215,7 @@ export default class EnvironmentLifecycleHelper {
 
         return JSON.stringify({
           name: mountObject.name,
-          bucket: mountObject.bucket,
+          bucket: datasetsBucketName, // TBD: Adding as a temporary fix to overcome accespoint permission issue.
           prefix: mountObject.prefix
         });
       })
@@ -315,11 +318,22 @@ export default class EnvironmentLifecycleHelper {
       Effect: 'Allow',
       Action: [
         's3:GetObject',
+        's3:GetObjectAcl',
+        's3:GetObjectTagging',
+        's3:GetObjectTorrent',
+        's3:GetObjectVersion',
+        's3:GetObjectVersionTagging',
+        's3:GetObjectVersionTorrent',
         's3:AbortMultipartUpload',
         's3:ListMultipartUploadParts',
         's3:PutObject',
-        's3:GetObjectAcl',
-        's3:PutObjectAcl'
+        's3:PutObjectAcl',
+        's3:PutObjectTagging',
+        's3:PutObjectVersionTagging',
+        's3:DeleteObject',
+        's3:DeleteObjectTagging',
+        's3:DeleteObjectVersion',
+        's3:DeleteObjectVersionTagging'
       ],
       Resource: _.union(storageArnsWithPath, endpointArnsWithPath)
     });

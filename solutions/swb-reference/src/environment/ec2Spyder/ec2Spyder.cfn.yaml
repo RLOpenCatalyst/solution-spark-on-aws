@@ -83,11 +83,22 @@ Resources:
           - Effect: Allow
             Action:
               - 's3:GetObject'
+              - 's3:GetObjectAcl'
+              - 's3:GetObjectTagging'
+              - 's3:GetObjectTorrent'
+              - 's3:GetObjectVersion'
+              - 's3:GetObjectVersionTagging'
+              - 's3:GetObjectVersionTorrent'
               - 's3:AbortMultipartUpload'
               - 's3:ListMultipartUploadParts'
               - 's3:PutObject'
-              - 's3:GetObjectAcl'
               - 's3:PutObjectAcl'
+              - 's3:PutObjectTagging'
+              - 's3:PutObjectVersionTagging'
+              - 's3:DeleteObject'
+              - 's3:DeleteObjectTagging'
+              - 's3:DeleteObjectVersion'
+              - 's3:DeleteObjectVersionTagging'
             Resource:
               - !Join ['/', [Ref: DatasetsBucketArn, '*']]
               - !Join [':', ['arn:aws:s3', Ref: MainAccountRegion, Ref: MainAccountId, 'accesspoint/*']]
@@ -297,14 +308,20 @@ Resources:
                 xhost +local:all
                 rm "$HOME/.config/spyder-py3/spyder.lock"
                 # Adding sleep to wait for study mounting
-                sleep 30
+                sleep 10
                 docker run --rm -ti -v /home/ec2-user:/home/ec2-user --net=host -e DISPLAY=:1 -e QTWEBENGINE_DISABLE_SANDBOX=1 relevancelab/spyder-ide_5.3.3:1.0.4
             '/home/ec2-user/mount_study.sh':
               mode: '000755'
               owner: 'ec2-user'
               group: 'ec2-user'
               content: !Sub |
-                #!/bin/sh
+                #!/bin/bash
+                # Set the directory to loop through
+                DIR="/home/ec2-user/studies"
+                # Loop through all the folders in the directory
+                for FOLDER in "$DIR"/*; do
+                    sudo umount "$FOLDER" || true
+                done
                 mount_s3.sh 2>&1 >> /home/ec2-user/mount_s3.log
             '/home/ec2-user/set_user_token.sh':
               content: !Sub |
