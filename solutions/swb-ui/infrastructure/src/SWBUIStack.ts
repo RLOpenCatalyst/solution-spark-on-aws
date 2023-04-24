@@ -163,7 +163,7 @@ export class SWBUIStack extends Stack {
     const securityPolicy = this._createSecurityPolicy(this.distributionEnvVars.API_BASE_URL);
     const distribution = new Distribution(this, this.distributionEnvVars.DISTRIBUTION_ARTIFACT_NAME, {
       defaultRootObject: 'index.html',
-      enableLogging: true,
+      enableLogging: false,
       defaultBehavior: {
         origin: new S3Origin(bucket, { originAccessIdentity }),
         responseHeadersPolicy: securityPolicy,

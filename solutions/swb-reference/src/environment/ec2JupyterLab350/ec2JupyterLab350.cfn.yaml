@@ -84,11 +84,22 @@ Resources:
           - Effect: Allow
             Action:
               - 's3:GetObject'
+              - 's3:GetObjectAcl'
+              - 's3:GetObjectTagging'
+              - 's3:GetObjectTorrent'
+              - 's3:GetObjectVersion'
+              - 's3:GetObjectVersionTagging'
+              - 's3:GetObjectVersionTorrent'
               - 's3:AbortMultipartUpload'
               - 's3:ListMultipartUploadParts'
               - 's3:PutObject'
-              - 's3:GetObjectAcl'
               - 's3:PutObjectAcl'
+              - 's3:PutObjectTagging'
+              - 's3:PutObjectVersionTagging'
+              - 's3:DeleteObject'
+              - 's3:DeleteObjectTagging'
+              - 's3:DeleteObjectVersion'
+              - 's3:DeleteObjectVersionTagging'
             Resource:
               - !Join ['/', [Ref: DatasetsBucketArn, '*']]
               - !Join [':', ['arn:aws:s3', Ref: MainAccountRegion, Ref: MainAccountId, 'accesspoint/*']]
@@ -385,6 +396,7 @@ Resources:
 
           # add command to start jupyterlab at reboot
           sudo crontab -l 2>/dev/null > "/tmp/crontab"
+          echo '@reboot su - ec2-user -c "env PATH=$PATH:/usr/local/bin mount_s3.sh" 2>&1 >> /home/ec2-user/mount_s3.log' >> "/tmp/crontab"
           echo '@reboot cd /home/ec2-user && sudo /home/ec2-user/start_jupyterlab.sh 2>&1 >> /var/log/jupyterlab.log' >> "/tmp/crontab"
           sudo crontab "/tmp/crontab"
 
