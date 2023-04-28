@@ -319,12 +319,6 @@ Resources:
               group: 'ec2-user'
               content: !Sub |
                 #!/bin/bash
-                # Set the directory to loop through
-                DIR="/home/ec2-user/studies"
-                # Loop through all the folders in the directory
-                for FOLDER in "$DIR"/*; do
-                    sudo umount "$FOLDER" || true
-                done
                 mount_s3.sh 2>&1 >> /home/ec2-user/mount_s3.log
             '/home/ec2-user/set_user_token.sh':
               content: !Sub |
