@@ -12,6 +12,7 @@ function uuidWithLowercasePrefix(prefix: string): string {
 
 const emtpyStringAsString: string = '^$';
 const uuidRegExpAsString: string = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+const userUuidRegExpAsString: string = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|.+?_[a-z0-9]{32}';
 
 const nonHTMLMessage: string = 'must not contain any of <>{}';
 const nonHtmlRegExpAsString: string = '^([^<>{}]*)$';
@@ -70,7 +71,7 @@ const costCenterIdRegExpString: string = `^${resourceTypeToKey.costCenter.toLowe
 const accountIdRegExpString: string = `^${resourceTypeToKey.account.toLowerCase()}-${uuidRegExpAsString}$`;
 const datasetIdRegExpString: string = `^${resourceTypeToKey.dataset.toLowerCase()}-${uuidRegExpAsString}$`;
 const sshKeyIdRegExpString: string = `^${resourceTypeToKey.sshKey.toLowerCase()}-${validSshKeyUuidRegExpAsString}$`;
-const userIdRegExpString: string = `^${uuidRegExpAsString}$`;
+const userIdRegExpString: string = `^${userUuidRegExpAsString}$`;
 
 // eslint-disable-next-line @rushstack/security/no-unsafe-regexp,security/detect-non-literal-regexp
 const uuidRegExp: RegExp = new RegExp(uuidRegExpAsString);
